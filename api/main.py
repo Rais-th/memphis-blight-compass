@@ -50,7 +50,8 @@ def stats():
         ).fetchall()
         top_zip = cur.execute(
             "SELECT zipcode, COUNT(*) AS n FROM requests_311 "
-            "WHERE zipcode IS NOT NULL GROUP BY zipcode ORDER BY n DESC LIMIT 1"
+            "WHERE zipcode IS NOT NULL AND TRIM(zipcode) != '' "
+            "GROUP BY zipcode ORDER BY n DESC LIMIT 1"
         ).fetchone()
         median_response = cur.execute(
             """
