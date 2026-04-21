@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memphis Blight Compass</title>
+<meta name="description" content="Public tool joining Memphis 311 complaints, Code Enforcement violations, and Shelby County Land Bank inventory to triage blight and surface acquisition-ready parcels.">
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="/static/js/nav.js" defer></script>
+</head>
+<body data-page="home">
+<div id="nav"></div>
+
+<main class="container">
+  <section class="hero">
+    <div class="eyebrow">Memphis · Civic Tech</div>
+    <h1>Memphis Blight Compass</h1>
+    <p class="lede">
+      The 311 integration has not yet been solved. Complaints, code enforcement cases, and
+      Land Bank inventory live in separate systems. This tool joins them, scores parcels by
+      chronic complaint density, and surfaces acquisition-ready lots where the City already
+      owns the inventory.
+    </p>
+    <p>
+      <a class="btn" href="/map">Open the map</a>
+      &nbsp;<a class="btn secondary" href="/top">See top 50 parcels</a>
+    </p>
+  </section>
+
+  <section>
+    <h2>Live snapshot</h2>
+    <div class="card-grid" id="stats-grid">
+      <div class="card"><div class="label">Parcels scored</div><div class="big" id="stat-parcels">—</div></div>
+      <div class="card"><div class="label">For-sale lots</div><div class="big" id="stat-landbank">—</div></div>
+      <div class="card"><div class="label">311 requests (1 year)</div><div class="big" id="stat-311">—</div></div>
+      <div class="card"><div class="label">Code enforcement cases</div><div class="big" id="stat-cv">—</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why this exists</h2>
+    <p>
+      The Bloomberg Harvard City Leadership Initiative publicly documented in October 2023
+      that Memphis's 311 integration "has not yet been solved" — complaints don't route
+      effectively between Code Enforcement, Public Works, and Solid Waste. Director Melanie
+      Neal of Community Enhancement said in October 2025: "We need a faster way to intervene."
+    </p>
+    <p>
+      Meanwhile, Shelby County Land Bank inventory isn't cross-referenced with 311 blight data.
+      Parcels sell for $400 to $2,000 in zones where neighbors have complained for years.
+      Nothing connects the data — until now.
+    </p>
+  </section>
+
+  <section>
+    <h2>How to use this</h2>
+    <h3>Blight strike team</h3>
+    <p class="small">Open <a href="/map">the map</a> and sort by score. Each red dot is a parcel with 3+ complaints in 12 months or multiple active code cases. The <a href="/equity">equity dashboard</a> shows which zips wait longest for resolution.</p>
+    <h3>Residents and non-profits</h3>
+    <p class="small">The <a href="/top">top 50</a> list surfaces acquisition-ready lots where the City-owned Land Bank has them for sale under $2,000. Click any parcel for full complaint + violation history.</p>
+    <h3>Journalists and researchers</h3>
+    <p class="small">All data is public record. CSV exports and an open API power this page. See <a href="/about">methodology</a> for sources and caveats.</p>
+  </section>
+</main>
+
+<footer>
+  Data from <a href="https://data.memphistn.gov">Memphis Open Data Hub</a>,
+  <a href="https://public-sctn.epropertyplus.com/landmgmtpub/">Shelby County Land Bank</a>,
+  <a href="https://hazards.fema.gov/">FEMA NFHL</a>. Built by
+  <a href="https://github.com/Rais-th">Rais Thelemuka</a>. Not legal or real-estate advice.
+  MIT license.
+</footer>
+
+<script>
+(async () => {
+  try {
+    const r = await fetch('/api/stats');
+    const d = await r.json();
+    document.getElementById('stat-parcels').textContent = fmtNum(d.parcels_scored);
+    document.getElementById('stat-landbank').textContent = fmtNum(d.landbank_for_sale);
+    document.getElementById('stat-311').textContent = fmtNum(d.requests_311);
+    document.getElementById('stat-cv').textContent = fmtNum(d.code_violations);
+  } catch {}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly CSV · Memphis Blight Compass</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="/static/js/nav.js" defer></script>
+</head>
+<body data-page="subscribe">
+<div id="nav"></div>
+<main class="container">
+  <div class="eyebrow mono muted" style="font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase">Weekly CSV</div>
+  <h1>Get the top-100 list each week</h1>
+  <p class="muted">Every Monday at 7am CT, a fresh CSV of top scored parcels with full address, price, complaint counts, and flood status. Built for the Blight Strike Team and community partners.</p>
+
+  <form id="sub-form" style="margin-top:24px">
+    <div class="form-row">
+      <input type="email" required name="email" placeholder="you@example.com">
+      <button class="btn" type="submit">Subscribe</button>
+    </div>
+    <p class="small muted">One email per week. No marketing. Unsubscribe any time.</p>
+  </form>
+
+  <div id="success" style="display:none; margin-top:16px">
+    <p>Subscribed. Watch for the confirmation email.</p>
+  </div>
+
+  <h2>Prefer a one-time download?</h2>
+  <p><a class="btn secondary" href="/api/csv/weekly?limit=100">Download current list</a></p>
+</main>
+
+<script>
+document.getElementById('sub-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = e.target.email.value;
+  const r = await fetch('/api/subscribe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ email })
+  });
+  if (r.ok) {
+    document.getElementById('sub-form').style.display = 'none';
+    document.getElementById('success').style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>

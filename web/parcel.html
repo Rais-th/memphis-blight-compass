@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parcel detail · Memphis Blight Compass</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="/static/js/nav.js" defer></script>
+</head>
+<body data-page="parcel">
+<div id="nav"></div>
+<main class="container">
+  <div class="eyebrow mono muted" id="parcel-id-eyebrow">—</div>
+  <h1 id="parcel-address">Parcel detail</h1>
+
+  <div id="summary" class="card-grid"></div>
+
+  <div id="minimap" style="height: 260px; border:1px solid var(--border); border-radius:6px; margin:24px 0;"></div>
+
+  <h2>Complaint history</h2>
+  <table class="data">
+    <thead>
+      <tr><th>Date</th><th>Category</th><th>Group</th><th>Dept</th><th>Status</th><th>Closed</th></tr>
+    </thead>
+    <tbody id="complaints-body"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+  </table>
+
+  <h2>Code enforcement</h2>
+  <table class="data">
+    <thead>
+      <tr><th>Opened</th><th>Source</th><th>Violation</th><th>Status</th><th>Closed</th></tr>
+    </thead>
+    <tbody id="violations-body"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+  </table>
+
+  <h2>How to apply</h2>
+  <p class="small muted">If this parcel is available through the Shelby County Land Bank, you can submit an application on the official Land Bank portal. This tool does not take applications; it only cross-references public records.</p>
+  <p><a class="btn" id="apply-btn" href="#" target="_blank" rel="noopener">Go to Land Bank</a></p>
+</main>
+
+<script>
+(async () => {
+  const parcelId = decodeURIComponent(location.pathname.split('/').pop());
+  document.getElementById('parcel-id-eyebrow').textContent = 'Parcel ' + parcelId;
+
+  const r = await fetch('/api/parcels/' + encodeURIComponent(parcelId));
+  if (!r.ok) {
+    document.getElementById('parcel-address').textContent = 'Parcel not found';
+    return;
+  }
+  const d = await r.json();
+  const p = d.parcel;
+
+  document.getElementById('parcel-address').textContent = p.address || 'Parcel ' + parcelId;
+
+  document.getElementById('summary').innerHTML = `
+    <div class="card"><div class="label">Blight score</div><div class="big">${scorePill(p.score)}</div></div>
+    <div class="card"><div class="label">Asking price</div><div class="big">${fmtCurrency(p.asking_price)}</div></div>
+    <div class="card"><div class="label">Size</div><div class="big">${p.acres ?? '—'} ac</div></div>
+    <div class="card"><div class="label">Flood zone</div><div class="big">${p.flood_zone || '—'}</div></div>
+    <div class="card"><div class="label">Complaints (12mo)</div><div class="big">${p.chronic_complaints}</div></div>
+    <div class="card"><div class="label">Code violations</div><div class="big">${p.code_violations}</div></div>
+  `;
+
+  const applyBtn = document.getElementById('apply-btn');
+  if (p.available === 'Y') {
+    applyBtn.href = 'https://public-sctn.epropertyplus.com/landmgmtpub/';
+  } else {
+    applyBtn.style.display = 'none';
+  }
+
+  if (p.lat && p.lng) {
+    const map = L.map('minimap', { zoomControl: true, preferCanvas: true }).setView([p.lat, p.lng], 17);
+    L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+      attribution: '&copy; OSM &copy; CARTO',
+      subdomains: 'abcd'
+    }).addTo(map);
+    L.marker([p.lat, p.lng]).addTo(map);
+  } else {
+    document.getElementById('minimap').style.display = 'none';
+  }
+
+  const cb = document.getElementById('complaints-body');
+  cb.innerHTML = d.complaints.length
+    ? d.complaints.map(c => `<tr>
+        <td>${fmtDate(c.reported_date)}</td>
+        <td>${c.category || ''}</td>
+        <td>${c.group_name || ''}</td>
+        <td>${c.department || ''}</td>
+        <td>${c.request_status || ''}</td>
+        <td>${fmtDate(c.closed_date)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" class="muted">No 311 complaints on file.</td></tr>';
+
+  const vb = document.getElementById('violations-body');
+  vb.innerHTML = d.violations.length
+    ? d.violations.map(v => `<tr>
+        <td>${fmtDate(v.open_date)}</td>
+        <td>${v.source_layer || ''}</td>
+        <td>${v.violation_type || ''}</td>
+        <td>${v.status || ''}</td>
+        <td>${fmtDate(v.close_date)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="muted">No code enforcement cases on file.</td></tr>';
+})();
+</script>
+</body>
+</html>

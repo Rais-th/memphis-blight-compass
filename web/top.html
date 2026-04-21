@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Top parcels · Memphis Blight Compass</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="/static/js/nav.js" defer></script>
+</head>
+<body data-page="top">
+<div id="nav"></div>
+<main class="container">
+  <div class="eyebrow mono muted" style="font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase">Acquisition-ready</div>
+  <h1>Top 50 parcels</h1>
+  <p class="muted">Ranked by blight score. Only City-owned Land Bank parcels that are for sale and not landlocked.</p>
+
+  <p>
+    <a class="btn" href="/api/csv/weekly?limit=100">Download CSV</a>
+    &nbsp;<a class="btn secondary" href="/map">See on map</a>
+  </p>
+
+  <table class="data" id="top-table">
+    <thead>
+      <tr>
+        <th>Score</th>
+        <th>Address</th>
+        <th>Zip</th>
+        <th class="num">Price</th>
+        <th class="num">Acres</th>
+        <th class="num">Complaints</th>
+        <th class="num">Violations</th>
+        <th>Flood</th>
+      </tr>
+    </thead>
+    <tbody id="top-body">
+      <tr><td colspan="8" class="muted">Loading…</td></tr>
+    </tbody>
+  </table>
+</main>
+
+<script>
+(async () => {
+  const r = await fetch('/api/parcels/top?limit=50&min_score=1&acquirable=true');
+  const data = await r.json();
+  const body = document.getElementById('top-body');
+  if (!data.features || !data.features.length) {
+    body.innerHTML = '<tr><td colspan="8" class="muted">No parcels currently meet the acquisition criteria. The full 365-day ingestion may still be running; check back soon.</td></tr>';
+    return;
+  }
+  body.innerHTML = data.features.map(f => {
+    const p = f.properties;
+    return `<tr onclick="location.href='/parcel/${encodeURIComponent(p.parcel_id)}'" style="cursor:pointer">
+      <td>${scorePill(p.score)}</td>
+      <td>${p.address || '—'}</td>
+      <td>${p.zipcode || ''}</td>
+      <td class="num">${fmtCurrency(p.asking_price)}</td>
+      <td class="num">${p.acres ?? '—'}</td>
+      <td class="num">${p.chronic_complaints}</td>
+      <td class="num">${p.code_violations}</td>
+      <td>${p.flood_zone || '—'}</td>
+    </tr>`;
+  }).join('');
+})();
+</script>
+</body>
+</html>

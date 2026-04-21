@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map · Memphis Blight Compass</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="/static/js/nav.js" defer></script>
+</head>
+<body data-page="map">
+<div id="nav"></div>
+<div class="map-wrap">
+  <div id="map"></div>
+  <div class="panel-side" id="panel-side" style="display:none;">
+    <span class="close" onclick="document.getElementById('panel-side').style.display='none'">close</span>
+    <div id="panel-body"></div>
+  </div>
+  <div class="legend">
+    <div><span class="swatch" style="background:#ff6565"></span>Score 10+</div>
+    <div><span class="swatch" style="background:#ff8e4c"></span>Score 6-9</div>
+    <div><span class="swatch" style="background:#ffd39a"></span>Score 3-5</div>
+    <div><span class="swatch" style="background:#5ed08e"></span>Score 1-2</div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', async () => {
+  const map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([35.118, -90.00], 11);
+  L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  const resp = await fetch('/api/parcels/top?limit=500&min_score=1&acquirable=false');
+  const geojson = await resp.json();
+
+  const colorFor = (s) => s >= 10 ? '#ff6565' : s >= 6 ? '#ff8e4c' : s >= 3 ? '#ffd39a' : '#5ed08e';
+  const radiusFor = (s) => Math.min(3 + s * 0.5, 10);
+
+  L.geoJSON(geojson, {
+    pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+      radius: radiusFor(f.properties.score || 1),
+      color: colorFor(f.properties.score || 1),
+      weight: 1,
+      fillColor: colorFor(f.properties.score || 1),
+      fillOpacity: 0.75,
+    }),
+    onEachFeature: (f, layer) => {
+      layer.on('click', () => openPanel(f.properties));
+    }
+  }).addTo(map);
+
+  function openPanel(p) {
+    const price = p.asking_price ? fmtCurrency(p.asking_price) : '—';
+    const addr = p.address || '(address unavailable)';
+    document.getElementById('panel-body').innerHTML = `
+      <h3>${addr}</h3>
+      <div class="small muted">Parcel ${p.parcel_id || ''}</div>
+      <div style="margin:12px 0">${scorePill(p.score)} <span class="small muted">blight score</span></div>
+      <table class="data" style="margin:10px 0">
+        <tr><td>Zip</td><td class="num">${p.zipcode || '—'}</td></tr>
+        <tr><td>Asking price</td><td class="num">${price}</td></tr>
+        <tr><td>Acres</td><td class="num">${p.acres ?? '—'}</td></tr>
+        <tr><td>Dimensions</td><td class="num">${p.parcel_width || '—'} × ${p.parcel_length || '—'}</td></tr>
+        <tr><td>Chronic complaints</td><td class="num">${p.chronic_complaints}</td></tr>
+        <tr><td>Code violations</td><td class="num">${p.code_violations}</td></tr>
+        <tr><td>Flood zone</td><td class="num">${p.flood_zone || '—'}</td></tr>
+        <tr><td>Improvement</td><td class="num">${p.improvement_type || '—'}</td></tr>
+      </table>
+      <a class="btn" href="/parcel/${encodeURIComponent(p.parcel_id)}">Full detail</a>
+    `;
+    document.getElementById('panel-side').style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>

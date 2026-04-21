@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Equity dashboard · Memphis Blight Compass</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="/static/js/nav.js" defer></script>
+</head>
+<body data-page="equity">
+<div id="nav"></div>
+<main class="container">
+  <div class="eyebrow mono muted" style="font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase">311 service distribution</div>
+  <h1>Response-time equity by zip</h1>
+  <p class="muted">Average days from 311 request to closure, by zip code. Longer bars mean longer waits. Zips with fewer than 10 requests in the window are excluded.</p>
+
+  <div id="chart" class="bar-chart"><p class="muted">Loading…</p></div>
+
+  <h2>What this can and cannot show</h2>
+  <p class="small muted">
+    This is the start of an open question the Bloomberg Harvard report left unanswered: is
+    Memphis 311 service distribution equitable? These averages include all request types,
+    weighted naturally by volume. "Still open" means the city has not yet closed the ticket.
+    Differences across zips are suggestive, not causal: request mix, distance from depots,
+    and contractor zones all matter. Download the raw data (link on About) to reproduce.
+  </p>
+
+  <h2>Raw table</h2>
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Zip</th>
+        <th class="num">Requests</th>
+        <th class="num">Avg days to close</th>
+        <th class="num">Still open</th>
+      </tr>
+    </thead>
+    <tbody id="equity-body"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
+  </table>
+</main>
+
+<script>
+(async () => {
+  const r = await fetch('/api/equity');
+  const d = await r.json();
+  const rows = d.zips || [];
+  const tbody = document.getElementById('equity-body');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="muted">Not enough 311 data yet (need zips with 10+ closed requests). Full ingestion may still be running.</td></tr>';
+    document.getElementById('chart').innerHTML = '';
+    return;
+  }
+  const maxDays = Math.max(...rows.map(r => r.avg_days_to_close || 0), 1);
+  document.getElementById('chart').innerHTML = rows.map(r => {
+    const days = Number(r.avg_days_to_close || 0);
+    const pct = Math.max(2, (days / maxDays) * 100);
+    return `<div class="bar-row">
+      <span>${r.zipcode}</span>
+      <div class="bar"><span style="width:${pct}%"></span></div>
+      <span class="num">${days.toFixed(1)} d</span>
+    </div>`;
+  }).join('');
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${r.zipcode}</td>
+    <td class="num">${fmtNum(r.total_requests)}</td>
+    <td class="num">${Number(r.avg_days_to_close || 0).toFixed(1)}</td>
+    <td class="num">${fmtNum(r.still_open)}</td>
+  </tr>`).join('');
+})();
+</script>
+</body>
+</html>

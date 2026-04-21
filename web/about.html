@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About · Memphis Blight Compass</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="/static/js/nav.js" defer></script>
+</head>
+<body data-page="about">
+<div id="nav"></div>
+<main class="container">
+  <div class="eyebrow mono muted" style="font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase">Methodology</div>
+  <h1>About the Blight Compass</h1>
+  <p class="lede">
+    A single public interface for the datasets Memphis already publishes but rarely joins. Built for
+    the Blight Strike Team, resident advocates, journalists, and anyone who has tried to report the same
+    abandoned lot three times and wondered where the request went.
+  </p>
+
+  <h2>Data sources</h2>
+  <table class="data">
+    <thead><tr><th>Source</th><th>Dataset</th><th>Refresh</th></tr></thead>
+    <tbody>
+      <tr><td>Memphis EGIS</td><td><a href="https://maps.memphistn.gov/mapping/rest/services/OPM/COM_311_REQUESTS_OPM/FeatureServer/0">311 Service Requests</a></td><td>Daily</td></tr>
+      <tr><td>Memphis EGIS</td><td><a href="https://maps.memphistn.gov/mapping/rest/services/PublicWorks/Code_Grounds_Services/FeatureServer/0">Code Grounds Services</a></td><td>Daily</td></tr>
+      <tr><td>Memphis EGIS</td><td><a href="https://maps.memphistn.gov/mapping/rest/services/PublicWorks/Code_EnvEnf_Services_Prod/FeatureServer/0">Environmental Enforcement</a></td><td>Daily</td></tr>
+      <tr><td>Shelby County</td><td><a href="https://public-sctn.epropertyplus.com/landmgmtpub/">Land Bank inventory</a></td><td>Daily</td></tr>
+      <tr><td>FEMA</td><td><a href="https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer">National Flood Hazard Layer</a></td><td>Quarterly</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Scoring formula</h2>
+  <pre class="mono small" style="background:var(--panel); padding:16px; border-radius:6px; border:1px solid var(--border); overflow-x:auto">
+score = (chronic_complaints × 3)     chronic = 3+ 311 requests in last 12 months
+      + (code_violations × 2)         count of Code Enforcement cases
+      + (1 if flood_zone is X)        FEMA Zone X or SFHA=False
+      + (1 if asking_price &lt; $2000)
+      + (1 if width ≥ 30 AND length ≥ 50)
+  </pre>
+  <p class="small muted">
+    Higher scores = more neighborhood pain concentrated on a single parcel, with attributes
+    that make intervention practical. This ranks parcels, it does not judge owners. Scores
+    are recomputed each ingestion run.
+  </p>
+
+  <h2>What this tool does not do</h2>
+  <ul class="small">
+    <li>Does not accept applications or transfer ownership.</li>
+    <li>Does not publish owner-level editorial claims. Owner fields are hidden; apply via the Land Bank portal for official records.</li>
+    <li>Does not include eviction, tenant, or non-public court data.</li>
+    <li>Does not constitute legal, financial, or real-estate advice.</li>
+  </ul>
+
+  <h2>Open source</h2>
+  <p>Code is public on <a href="https://github.com/Rais-th/memphis-blight-compass">GitHub</a> under the MIT license. Issues, pull requests, and dataset suggestions welcome.</p>
+
+  <h2>Contact</h2>
+  <p class="mono small"><a href="mailto:rthelemuka@gmail.com">rthelemuka@gmail.com</a></p>
+</main>
+</body>
+</html>
