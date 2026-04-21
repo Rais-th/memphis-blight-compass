@@ -17,34 +17,42 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from db.db import connect
+from score.normalize import backfill as backfill_norm
 
 SQL_SCORE = """
 INSERT OR REPLACE INTO scores
-  (parcel_id, score, chronic_complaints, code_violations,
+  (parcel_id, parcel_norm, score, chronic_complaints, code_violations,
    flood_safe, affordable, buildable, computed_at)
 WITH
   complaints AS (
-    SELECT parcel_id, COUNT(*) AS n
+    SELECT parcel_norm, COUNT(*) AS n
     FROM requests_311
-    WHERE parcel_id IS NOT NULL
+    WHERE parcel_norm IS NOT NULL
       AND reported_date >= datetime('now', '-365 days')
-    GROUP BY parcel_id
+    GROUP BY parcel_norm
   ),
   violations AS (
-    SELECT parcel_id, COUNT(*) AS n
+    SELECT parcel_norm, COUNT(*) AS n
     FROM code_violations
-    WHERE parcel_id IS NOT NULL
-    GROUP BY parcel_id
+    WHERE parcel_norm IS NOT NULL
+    GROUP BY parcel_norm
+  ),
+  lb AS (
+    SELECT parcel_norm, parcel_id, asking_price, parcel_length, parcel_width
+    FROM landbank_inventory WHERE parcel_norm IS NOT NULL
+  ),
+  flood AS (
+    SELECT parcel_norm, flood_zone, sfha_tf
+    FROM flood_zones WHERE parcel_norm IS NOT NULL
   ),
   parcels AS (
-    SELECT parcel_id FROM landbank_inventory
-    UNION
-    SELECT parcel_id FROM complaints
-    UNION
-    SELECT parcel_id FROM violations
+    SELECT parcel_norm FROM lb
+    UNION SELECT parcel_norm FROM complaints
+    UNION SELECT parcel_norm FROM violations
   )
 SELECT
-  p.parcel_id,
+  COALESCE(l.parcel_id, p.parcel_norm) AS parcel_id,
+  p.parcel_norm,
   (CASE WHEN COALESCE(c.n, 0) >= 3 THEN COALESCE(c.n, 0) ELSE 0 END) * 3.0
     + COALESCE(v.n, 0) * 2.0
     + (CASE WHEN f.flood_zone IN ('X', 'X500') OR f.sfha_tf = 'F' THEN 1 ELSE 0 END)
@@ -58,16 +66,16 @@ SELECT
   CASE WHEN COALESCE(l.parcel_width, 0) >= 30 AND COALESCE(l.parcel_length, 0) >= 50 THEN 1 ELSE 0 END AS buildable,
   ? AS computed_at
 FROM parcels p
-LEFT JOIN complaints c USING (parcel_id)
-LEFT JOIN violations v USING (parcel_id)
-LEFT JOIN flood_zones f USING (parcel_id)
-LEFT JOIN landbank_inventory l USING (parcel_id)
-WHERE p.parcel_id IS NOT NULL
+LEFT JOIN complaints c USING (parcel_norm)
+LEFT JOIN violations v USING (parcel_norm)
+LEFT JOIN flood    f USING (parcel_norm)
+LEFT JOIN lb       l USING (parcel_norm)
 """
 
 
 def compute_scores() -> dict:
     started_at = datetime.now(timezone.utc).isoformat()
+    backfill_norm()
     conn = connect()
     cur = conn.cursor()
     cur.execute(

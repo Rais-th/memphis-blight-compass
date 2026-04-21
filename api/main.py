@@ -96,8 +96,8 @@ def parcels_top(limit: int = 50, min_score: float = 1.0, acquirable: bool = True
               l.parcel_width, l.improvement_type, l.lat, l.lng,
               f.flood_zone
             FROM scores s
-            LEFT JOIN landbank_inventory l USING (parcel_id)
-            LEFT JOIN flood_zones f USING (parcel_id)
+            LEFT JOIN landbank_inventory l ON l.parcel_norm = s.parcel_norm
+            LEFT JOIN flood_zones f ON f.parcel_norm = s.parcel_norm
             WHERE {' AND '.join(where)}
             ORDER BY s.score DESC, l.asking_price ASC
             LIMIT ?
@@ -130,35 +130,37 @@ def parcel_detail(parcel_id: str):
                    l.current_status, l.available, l.lat, l.lng,
                    f.flood_zone, f.sfha_tf
             FROM scores s
-            LEFT JOIN landbank_inventory l USING (parcel_id)
-            LEFT JOIN flood_zones f USING (parcel_id)
-            WHERE s.parcel_id = ?
+            LEFT JOIN landbank_inventory l ON l.parcel_norm = s.parcel_norm
+            LEFT JOIN flood_zones f ON f.parcel_norm = s.parcel_norm
+            WHERE s.parcel_id = ? OR s.parcel_norm = ?
+            LIMIT 1
             """,
-            (parcel_id,),
+            (parcel_id, parcel_id),
         ).fetchone()
         if not base:
             raise HTTPException(404, f"Parcel {parcel_id} not found")
+        norm = base["parcel_norm"]
         complaints = cur.execute(
             """
             SELECT incident_number, category, group_name, department,
                    request_status, reported_date, closed_date, address, zipcode
             FROM requests_311
-            WHERE parcel_id = ?
+            WHERE parcel_norm = ?
             ORDER BY reported_date DESC
             LIMIT 200
             """,
-            (parcel_id,),
+            (norm,),
         ).fetchall()
         violations = cur.execute(
             """
             SELECT id, source_layer, case_number, violation_type, status,
                    open_date, close_date, address, zipcode
             FROM code_violations
-            WHERE parcel_id = ?
+            WHERE parcel_norm = ?
             ORDER BY open_date DESC
             LIMIT 200
             """,
-            (parcel_id,),
+            (norm,),
         ).fetchall()
         return {
             "parcel": row_to_dict(base),
@@ -227,8 +229,8 @@ def csv_weekly(limit: int = 100):
                    l.address, l.zipcode, l.asking_price, l.acres, l.parcel_length,
                    l.parcel_width, l.improvement_type, l.lat, l.lng, f.flood_zone
             FROM scores s
-            JOIN landbank_inventory l USING (parcel_id)
-            LEFT JOIN flood_zones f USING (parcel_id)
+            JOIN landbank_inventory l ON l.parcel_norm = s.parcel_norm
+            LEFT JOIN flood_zones f ON f.parcel_norm = s.parcel_norm
             WHERE l.current_status='FOR SALE'
               AND l.improvement_type NOT IN ('LAND LOCKED','INSEPARABLE PCL','VCNT STRIP','DITCH')
             ORDER BY s.score DESC, l.asking_price ASC
