@@ -166,6 +166,15 @@ table.data th {
 }
 table.data tr:hover td { background: var(--panel-2); }
 table.data td.num, table.data th.num { text-align: right; }
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.table-wrap table.data { border: none; min-width: 600px; }
+.table-wrap table.data th, .table-wrap table.data td { border-bottom: 1px solid var(--border); }
 .score-pill {
   display: inline-block;
   padding: 2px 8px;
