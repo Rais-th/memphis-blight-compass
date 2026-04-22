@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Memphis Blight Compass</title>
-<meta name="description" content="Public tool joining Memphis 311 complaints, Code Enforcement violations, and Shelby County Land Bank inventory to triage blight and surface acquisition-ready parcels.">
-<link rel="stylesheet" href="/static/css/app.css">
+<meta name="description" content="Joins Memphis 311 complaints, Code Enforcement cases, and Shelby County Land Bank inventory in one map.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/static/css/app.css?v=3">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="/static/js/nav.js" defer></script>
 </head>
 <body data-page="home">
@@ -16,12 +18,19 @@
     <div class="eyebrow">Memphis · Civic Tech</div>
     <h1>Memphis Blight Compass</h1>
     <p class="lede">
-      The 311 integration has not yet been solved. Complaints, code enforcement cases, and
-      Land Bank inventory live in separate systems. This tool joins them, scores parcels by
-      chronic complaint density, and surfaces acquisition-ready lots where the City already
-      owns the inventory.
+      Memphis 311 complaints, code enforcement cases, and Land Bank inventory
+      joined in one map. So the city can triage blight, and residents can find
+      acquirable lots.
     </p>
-    <p>
+
+    <div id="home-map" class="home-map">
+      <div class="home-map-loading">Loading hotspots…</div>
+    </div>
+    <div class="home-map-caption small muted">
+      Sample of the top-scoring parcels. <a href="/map">Open the full map →</a>
+    </div>
+
+    <p style="margin-top:28px">
       <a class="btn" href="/map">Open the map</a>
       &nbsp;<a class="btn secondary" href="/top">See top 50 parcels</a>
     </p>
@@ -82,6 +91,49 @@
     document.getElementById('stat-cv').textContent = fmtNum(d.code_violations);
   } catch {}
 })();
+
+window.addEventListener('load', async () => {
+  const el = document.getElementById('home-map');
+  if (!el || typeof L === 'undefined') return;
+  try {
+    const resp = await fetch('/api/parcels/top?limit=200&min_score=3&acquirable=false');
+    if (!resp.ok) throw new Error('fetch');
+    const geojson = await resp.json();
+    el.innerHTML = '';
+    const map = L.map(el, {
+      zoomControl: true,
+      scrollWheelZoom: false,
+      preferCanvas: true,
+      attributionControl: true,
+    }).setView([35.118, -90.00], 10);
+    L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 19,
+    }).addTo(map);
+    const colorFor = s => s >= 10 ? '#ff6565' : s >= 6 ? '#ff8e4c' : s >= 3 ? '#ffd39a' : '#5ed08e';
+    L.geoJSON(geojson, {
+      pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+        radius: Math.min(4 + (f.properties.score || 1) * 0.4, 9),
+        color: colorFor(f.properties.score || 1),
+        weight: 1,
+        fillColor: colorFor(f.properties.score || 1),
+        fillOpacity: 0.75,
+        className: 'parcel-dot',
+      }),
+      onEachFeature: (f, layer) => {
+        const p = f.properties;
+        const label = `${p.address || 'Parcel ' + p.parcel_id}<br><span style="opacity:.7">Score ${Number(p.score).toFixed(1)} · click to view</span>`;
+        layer.bindTooltip(label, { direction: 'top', offset: [0, -4] });
+        layer.on('click', () => {
+          location.href = '/parcel/' + encodeURIComponent(p.parcel_id);
+        });
+      },
+    }).addTo(map);
+  } catch (e) {
+    el.innerHTML = '<div class="home-map-loading">Map unavailable. Use /map for full view.</div>';
+  }
+});
 </script>
 </body>
 </html>

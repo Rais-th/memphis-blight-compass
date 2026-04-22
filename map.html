@@ -47,9 +47,13 @@ window.addEventListener('load', async () => {
       weight: 1,
       fillColor: colorFor(f.properties.score || 1),
       fillOpacity: 0.75,
+      className: 'parcel-dot',
     }),
     onEachFeature: (f, layer) => {
-      layer.on('click', () => openPanel(f.properties));
+      const p = f.properties;
+      const label = `${p.address || 'Parcel ' + p.parcel_id}<br><span style="opacity:.7">Score ${Number(p.score).toFixed(1)} · click for detail</span>`;
+      layer.bindTooltip(label, { direction: 'top', offset: [0, -4] });
+      layer.on('click', () => openPanel(p));
     }
   }).addTo(map);
 
