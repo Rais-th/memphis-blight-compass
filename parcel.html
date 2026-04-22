@@ -19,17 +19,19 @@
 
   <div id="minimap" style="height: 260px; border:1px solid var(--border); border-radius:6px; margin:24px 0;"></div>
 
-  <h2>Complaint history</h2>
+  <h2>311 complaint history</h2>
+  <p class="small muted">Citizen 311 reports filed for this parcel. Memphis sometimes leaves the category or close date blank in the source data; we fall back to request type or resolved date when we can.</p>
   <div class="table-wrap">
     <table class="data">
       <thead>
-        <tr><th>Date</th><th>Category</th><th>Group</th><th>Dept</th><th>Status</th><th>Closed</th></tr>
+        <tr><th>Reported</th><th>Type</th><th>Dept</th><th>Status</th><th>Closed</th></tr>
       </thead>
-      <tbody id="complaints-body"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+      <tbody id="complaints-body"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
     </table>
   </div>
 
-  <h2>Code enforcement</h2>
+  <h2>Formal code enforcement cases</h2>
+  <p class="small muted">Cases opened by the Memphis Code Enforcement department (grounds + environmental). This is a different dataset from 311 complaints above.</p>
   <div class="table-wrap">
     <table class="data">
       <thead>
@@ -99,13 +101,12 @@
   cb.innerHTML = d.complaints.length
     ? d.complaints.map(c => `<tr>
         <td>${fmtDate(c.reported_date)}</td>
-        <td>${c.category || ''}</td>
-        <td>${c.group_name || ''}</td>
-        <td>${c.department || ''}</td>
-        <td>${c.request_status || ''}</td>
+        <td>${c.category || c.request_type || '—'}</td>
+        <td>${c.department || c.group_name || '—'}</td>
+        <td>${c.request_status || '—'}</td>
         <td>${fmtDate(c.closed_date)}</td>
       </tr>`).join('')
-    : '<tr><td colspan="6" class="muted">No 311 complaints on file.</td></tr>';
+    : '<tr><td colspan="5" class="muted">No 311 complaints on file.</td></tr>';
 
   const vb = document.getElementById('violations-body');
   vb.innerHTML = d.violations.length

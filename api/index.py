@@ -178,8 +178,12 @@ def parcel_detail(parcel_id: str):
         norm = base["parcel_norm"]
         cur.execute(
             """
-            SELECT incident_number, category, group_name, department,
-                   request_status, reported_date, closed_date, address, zipcode
+            SELECT incident_number,
+                   COALESCE(NULLIF(TRIM(category), ''), request_type) AS category,
+                   group_name, department, request_type, request_status,
+                   reported_date,
+                   COALESCE(closed_date, resolved_date) AS closed_date,
+                   address, zipcode
             FROM requests_311
             WHERE parcel_norm = %s
             ORDER BY reported_date DESC NULLS LAST
