@@ -35,9 +35,11 @@
     <tbody id="violations-body"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
   </table>
 
-  <h2>How to apply</h2>
-  <p class="small muted">If this parcel is available through the Shelby County Land Bank, you can submit an application on the official Land Bank portal. This tool does not take applications; it only cross-references public records.</p>
-  <p><a class="btn" id="apply-btn" href="#" target="_blank" rel="noopener">Go to Land Bank</a></p>
+  <section id="apply-section">
+    <h2>How to apply</h2>
+    <p class="small muted">If this parcel is available through the Shelby County Land Bank, you can submit an application on the official Land Bank portal. This tool does not take applications; it only cross-references public records.</p>
+    <p><a class="btn" id="apply-btn" href="#" target="_blank" rel="noopener">Go to Land Bank</a></p>
+  </section>
 </main>
 
 <script>
@@ -54,21 +56,28 @@
   const p = d.parcel;
 
   document.getElementById('parcel-address').textContent = p.address || 'Parcel ' + parcelId;
+  document.getElementById('parcel-id-eyebrow').innerHTML = p.in_landbank
+    ? `Parcel ${parcelId} &middot; <span style="color:var(--good)">Land Bank for sale</span>`
+    : `Parcel ${parcelId} &middot; <span class="muted">Not listed for sale</span>`;
+
+  const lbCards = p.in_landbank
+    ? `<div class="card"><div class="label">Asking price</div><div class="big">${fmtCurrency(p.asking_price)}</div></div>
+       <div class="card"><div class="label">Size</div><div class="big">${p.acres ?? '—'} ac</div></div>
+       <div class="card"><div class="label">Flood zone</div><div class="big">${p.flood_zone || '—'}</div></div>`
+    : '';
 
   document.getElementById('summary').innerHTML = `
     <div class="card"><div class="label">Blight score</div><div class="big">${scorePill(p.score)}</div></div>
-    <div class="card"><div class="label">Asking price</div><div class="big">${fmtCurrency(p.asking_price)}</div></div>
-    <div class="card"><div class="label">Size</div><div class="big">${p.acres ?? '—'} ac</div></div>
-    <div class="card"><div class="label">Flood zone</div><div class="big">${p.flood_zone || '—'}</div></div>
     <div class="card"><div class="label">Complaints (12mo)</div><div class="big">${p.chronic_complaints}</div></div>
     <div class="card"><div class="label">Code violations</div><div class="big">${p.code_violations}</div></div>
+    ${lbCards}
   `;
 
-  const applyBtn = document.getElementById('apply-btn');
-  if (p.available === 'Y') {
-    applyBtn.href = 'https://public-sctn.epropertyplus.com/landmgmtpub/';
+  const applySection = document.getElementById('apply-section');
+  if (p.in_landbank && p.available === 'Y') {
+    document.getElementById('apply-btn').href = 'https://public-sctn.epropertyplus.com/landmgmtpub/';
   } else {
-    applyBtn.style.display = 'none';
+    applySection.style.display = 'none';
   }
 
   if (p.lat && p.lng) {

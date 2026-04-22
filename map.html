@@ -54,21 +54,27 @@ window.addEventListener('load', async () => {
   }).addTo(map);
 
   function openPanel(p) {
-    const price = p.asking_price ? fmtCurrency(p.asking_price) : '—';
-    const addr = p.address || '(address unavailable)';
+    const addr = p.address || '(address unknown)';
+    const lb = p.in_landbank;
+    const status = lb
+      ? `<div class="small" style="color:var(--good)">Land Bank for sale</div>`
+      : `<div class="small muted">Not currently listed for sale</div>`;
+    const lbRows = lb ? `
+        <tr><td>Asking price</td><td class="num">${fmtCurrency(p.asking_price)}</td></tr>
+        <tr><td>Acres</td><td class="num">${p.acres ?? '—'}</td></tr>
+        <tr><td>Dimensions</td><td class="num">${p.parcel_width || '—'} × ${p.parcel_length || '—'}</td></tr>
+        <tr><td>Flood zone</td><td class="num">${p.flood_zone || '—'}</td></tr>
+        <tr><td>Improvement</td><td class="num">${p.improvement_type || '—'}</td></tr>` : '';
     document.getElementById('panel-body').innerHTML = `
       <h3>${addr}</h3>
       <div class="small muted">Parcel ${p.parcel_id || ''}</div>
+      ${status}
       <div style="margin:12px 0">${scorePill(p.score)} <span class="small muted">blight score</span></div>
       <table class="data" style="margin:10px 0">
         <tr><td>Zip</td><td class="num">${p.zipcode || '—'}</td></tr>
-        <tr><td>Asking price</td><td class="num">${price}</td></tr>
-        <tr><td>Acres</td><td class="num">${p.acres ?? '—'}</td></tr>
-        <tr><td>Dimensions</td><td class="num">${p.parcel_width || '—'} × ${p.parcel_length || '—'}</td></tr>
         <tr><td>Chronic complaints</td><td class="num">${p.chronic_complaints}</td></tr>
         <tr><td>Code violations</td><td class="num">${p.code_violations}</td></tr>
-        <tr><td>Flood zone</td><td class="num">${p.flood_zone || '—'}</td></tr>
-        <tr><td>Improvement</td><td class="num">${p.improvement_type || '—'}</td></tr>
+        ${lbRows}
       </table>
       <a class="btn" href="/parcel/${encodeURIComponent(p.parcel_id)}">Full detail</a>
     `;

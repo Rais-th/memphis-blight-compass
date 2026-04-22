@@ -33,23 +33,6 @@ app.add_middleware(
 )
 
 
-@app.get("/api/_debug")
-def debug():
-    """Expose env keys (no secrets) + DB ping so we can diagnose 500s."""
-    import os, traceback
-    env_keys = sorted(
-        k for k in os.environ
-        if k.startswith(("DATABASE", "POSTGRES", "PG", "VERCEL"))
-    )
-    try:
-        with connect() as conn, conn.cursor() as cur:
-            cur.execute("SELECT 1 AS ok, current_database() AS db, version() AS v")
-            row = dict(cur.fetchone())
-            return {"env_keys": env_keys, "db_ping": row}
-    except Exception as e:
-        return {"env_keys": env_keys, "error": str(e)[:500], "trace": traceback.format_exc()[-1500:]}
-
-
 @app.get("/api/stats")
 def stats():
     with connect() as conn, conn.cursor() as cur:
@@ -104,17 +87,29 @@ def parcels_top(limit: int = 50, min_score: float = 1.0, acquirable: bool = True
             "AND l.improvement_type NOT IN ('LAND LOCKED','INSEPARABLE PCL','VCNT STRIP','DITCH')"
         )
     sql = f"""
+        WITH latest_311 AS (
+            SELECT parcel_norm,
+                   (ARRAY_AGG(address ORDER BY reported_date DESC NULLS LAST))[1] AS address,
+                   (ARRAY_AGG(zipcode ORDER BY reported_date DESC NULLS LAST))[1] AS zipcode
+            FROM requests_311
+            WHERE parcel_norm IS NOT NULL AND address IS NOT NULL AND TRIM(address) <> ''
+            GROUP BY parcel_norm
+        )
         SELECT
           s.parcel_id, s.score, s.chronic_complaints, s.code_violations,
           s.flood_safe, s.affordable, s.buildable,
-          l.address, l.zipcode, l.asking_price, l.acres, l.parcel_length,
-          l.parcel_width, l.improvement_type,
+          COALESCE(l.address, r.address) AS address,
+          COALESCE(l.zipcode, r.zipcode) AS zipcode,
+          l.asking_price, l.acres, l.parcel_length, l.parcel_width,
+          l.improvement_type,
           COALESCE(l.lat, s.lat) AS lat,
           COALESCE(l.lng, s.lng) AS lng,
-          f.flood_zone
+          f.flood_zone,
+          CASE WHEN l.parcel_id IS NOT NULL THEN TRUE ELSE FALSE END AS in_landbank
         FROM scores s
         LEFT JOIN landbank_inventory l ON l.parcel_norm = s.parcel_norm
         LEFT JOIN flood_zones f        ON f.parcel_norm = s.parcel_norm
+        LEFT JOIN latest_311 r         ON r.parcel_norm = s.parcel_norm
         WHERE {' AND '.join(where)}
         ORDER BY s.score DESC, l.asking_price ASC NULLS LAST
         LIMIT %s
@@ -140,15 +135,38 @@ def parcel_detail(parcel_id: str):
     with connect() as conn, conn.cursor() as cur:
         cur.execute(
             """
-            SELECT s.*, l.address, l.zipcode, l.asking_price, l.acres,
-                   l.parcel_length, l.parcel_width, l.improvement_type,
-                   l.current_status, l.available,
+            WITH latest_311 AS (
+                SELECT parcel_norm,
+                       (ARRAY_AGG(address ORDER BY reported_date DESC NULLS LAST))[1] AS address,
+                       (ARRAY_AGG(zipcode ORDER BY reported_date DESC NULLS LAST))[1] AS zipcode
+                FROM requests_311
+                WHERE parcel_norm IS NOT NULL
+                  AND address IS NOT NULL AND TRIM(address) <> ''
+                GROUP BY parcel_norm
+            ),
+            latest_cv AS (
+                SELECT parcel_norm,
+                       (ARRAY_AGG(address ORDER BY open_date DESC NULLS LAST))[1] AS address,
+                       (ARRAY_AGG(zipcode ORDER BY open_date DESC NULLS LAST))[1] AS zipcode
+                FROM code_violations
+                WHERE parcel_norm IS NOT NULL
+                  AND address IS NOT NULL AND TRIM(address) <> ''
+                GROUP BY parcel_norm
+            )
+            SELECT s.*,
+                   COALESCE(l.address, r.address, cv.address) AS address,
+                   COALESCE(l.zipcode, r.zipcode, cv.zipcode) AS zipcode,
+                   l.asking_price, l.acres, l.parcel_length, l.parcel_width,
+                   l.improvement_type, l.current_status, l.available,
                    COALESCE(l.lat, s.lat) AS lat,
                    COALESCE(l.lng, s.lng) AS lng,
-                   f.flood_zone, f.sfha_tf
+                   f.flood_zone, f.sfha_tf,
+                   CASE WHEN l.parcel_id IS NOT NULL THEN TRUE ELSE FALSE END AS in_landbank
             FROM scores s
             LEFT JOIN landbank_inventory l ON l.parcel_norm = s.parcel_norm
             LEFT JOIN flood_zones f        ON f.parcel_norm = s.parcel_norm
+            LEFT JOIN latest_311 r         ON r.parcel_norm = s.parcel_norm
+            LEFT JOIN latest_cv cv         ON cv.parcel_norm = s.parcel_norm
             WHERE s.parcel_id = %s OR s.parcel_norm = %s
             LIMIT 1
             """,
