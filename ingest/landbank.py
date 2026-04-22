@@ -1,18 +1,15 @@
-"""Ingest Shelby County Land Bank FOR SALE inventory.
-
-Public endpoint (ePropertyPlus backend), no auth. We loop Memphis zips and
-upsert by parcelNumber.
-"""
+"""Ingest Shelby County Land Bank FOR SALE inventory into Neon Postgres."""
 from __future__ import annotations
 
 import json
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any
 
 import httpx
 
-from db.db import connect
+from db.pg import connect
 
 BASE_URL = "https://public-sctn.epropertyplus.com/landmgmtpub/remote/public/property/getPublishedProperties"
 
@@ -24,7 +21,21 @@ MEMPHIS_ZIPS = [
     "38141",
 ]
 
-SKIP_IMPROVEMENT = {"LAND LOCKED", "INSEPARABLE PCL", "VCNT STRIP", "DITCH"}
+
+def normalize_parcel(pid: str | None) -> str | None:
+    if not pid:
+        return None
+    s = re.sub(r"\s+", "", pid.strip().upper())
+    if len(s) < 6:
+        return None
+    block, mapp, rest = s[:3], s[3:6], s[6:]
+    suffix = ""
+    if rest and rest[-1].isalpha():
+        suffix = rest[-1]
+        rest = rest[:-1]
+    if not rest or not rest.isdigit():
+        return None
+    return f"{block}{mapp}{int(rest)}{suffix}"
 
 
 def fetch_zip(zip_code: str, client: httpx.Client) -> list[dict[str, Any]]:
@@ -53,18 +64,39 @@ def fetch_zip(zip_code: str, client: httpx.Client) -> list[dict[str, Any]]:
 
 
 def ingest() -> dict:
-    started_at = datetime.now(timezone.utc).isoformat()
+    started_at = datetime.now(timezone.utc)
     conn = connect()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO ingestion_log (source, started_at, status) VALUES (?, ?, ?)",
+        "INSERT INTO ingestion_log (source, started_at, status) VALUES (%s, %s, %s) RETURNING id",
         ("landbank", started_at, "running"),
     )
-    log_id = cur.lastrowid
+    log_id = cur.fetchone()["id"]
 
-    inserted = updated = 0
-    total_seen = 0
+    insert_sql = """
+        INSERT INTO landbank_inventory (
+            parcel_id, parcel_norm, address, zipcode, current_status, available,
+            asking_price, acres, parcel_length, parcel_width,
+            improvement_type, lat, lng, last_seen_at, raw_json
+        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT (parcel_id) DO UPDATE SET
+            parcel_norm=EXCLUDED.parcel_norm,
+            address=EXCLUDED.address,
+            zipcode=EXCLUDED.zipcode,
+            current_status=EXCLUDED.current_status,
+            available=EXCLUDED.available,
+            asking_price=EXCLUDED.asking_price,
+            acres=EXCLUDED.acres,
+            parcel_length=EXCLUDED.parcel_length,
+            parcel_width=EXCLUDED.parcel_width,
+            improvement_type=EXCLUDED.improvement_type,
+            lat=EXCLUDED.lat,
+            lng=EXCLUDED.lng,
+            last_seen_at=EXCLUDED.last_seen_at,
+            raw_json=EXCLUDED.raw_json
+    """
 
+    total = 0
     try:
         with httpx.Client(headers={"User-Agent": "memphis-blight-compass/1.0"}) as client:
             for zc in MEMPHIS_ZIPS:
@@ -75,13 +107,12 @@ def ingest() -> dict:
                 for r in records:
                     if r.get("currentStatus") != "FOR SALE":
                         continue
-                    imp = r.get("s_custom_0049")
                     pn = r.get("parcelNumber")
                     if not pn:
                         continue
-                    total_seen += 1
                     row = (
                         pn,
+                        normalize_parcel(pn),
                         r.get("propertyAddress1"),
                         r.get("postalCode") or zc,
                         r.get("currentStatus"),
@@ -90,56 +121,30 @@ def ingest() -> dict:
                         float(r.get("s_custom_0032") or 0) or None,
                         r.get("parcelLength"),
                         r.get("parcelWidth"),
-                        imp,
+                        r.get("s_custom_0049"),
                         r.get("latitude"),
                         r.get("longitude"),
-                        datetime.now(timezone.utc).isoformat(),
+                        datetime.now(timezone.utc),
                         json.dumps(r)[:20000],
                     )
-                    cur.execute(
-                        """
-                        INSERT INTO landbank_inventory (
-                            parcel_id, address, zipcode, current_status, available,
-                            asking_price, acres, parcel_length, parcel_width,
-                            improvement_type, lat, lng, last_seen_at, raw_json
-                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                        ON CONFLICT(parcel_id) DO UPDATE SET
-                            address=excluded.address,
-                            zipcode=excluded.zipcode,
-                            current_status=excluded.current_status,
-                            available=excluded.available,
-                            asking_price=excluded.asking_price,
-                            acres=excluded.acres,
-                            parcel_length=excluded.parcel_length,
-                            parcel_width=excluded.parcel_width,
-                            improvement_type=excluded.improvement_type,
-                            lat=excluded.lat,
-                            lng=excluded.lng,
-                            last_seen_at=excluded.last_seen_at,
-                            raw_json=excluded.raw_json
-                        """,
-                        row,
-                    )
-                    if cur.rowcount == 1:
-                        inserted += 1
-                    else:
-                        updated += 1
+                    cur.execute(insert_sql, row)
+                    total += 1
                 time.sleep(0.3)
 
         cur.execute(
-            "UPDATE ingestion_log SET finished_at=?, records_inserted=?, records_updated=?, status=? WHERE id=?",
-            (datetime.now(timezone.utc).isoformat(), inserted, updated, "ok", log_id),
+            "UPDATE ingestion_log SET finished_at=%s, records_inserted=%s, status=%s WHERE id=%s",
+            (datetime.now(timezone.utc), total, "ok", log_id),
         )
     except Exception as e:
         cur.execute(
-            "UPDATE ingestion_log SET finished_at=?, status=?, error_message=? WHERE id=?",
-            (datetime.now(timezone.utc).isoformat(), "error", str(e), log_id),
+            "UPDATE ingestion_log SET finished_at=%s, status=%s, error_message=%s WHERE id=%s",
+            (datetime.now(timezone.utc), "error", str(e)[:500], log_id),
         )
         raise
     finally:
         conn.close()
 
-    return {"inserted": inserted, "updated": updated, "total_seen": total_seen}
+    return {"processed": total}
 
 
 if __name__ == "__main__":

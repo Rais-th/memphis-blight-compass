@@ -1,0 +1,37 @@
+name: Nightly ingest + rescore
+
+on:
+  schedule:
+    - cron: "0 10 * * *"   # 10:00 UTC = 5:00 AM Central
+  workflow_dispatch:
+    inputs:
+      skip_fema:
+        description: "Skip FEMA flood check"
+        required: false
+        default: "false"
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run ingest + rescore
+        run: |
+          if [ "${{ github.event.inputs.skip_fema }}" = "true" ]; then
+            python -m scripts.run_ingest --days 365 --skip-fema
+          else
+            python -m scripts.run_ingest --days 365
+          fi

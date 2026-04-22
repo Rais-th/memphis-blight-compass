@@ -1,17 +1,14 @@
-"""Ingest Memphis Code Enforcement cases.
+"""Ingest Memphis Code Enforcement cases into Neon Postgres.
 
-Two layers on maps.memphistn.gov/mapping/rest are relevant:
-  - PublicWorks/Code_Grounds_Services: overgrown lots, tall grass, junky yards
-  - PublicWorks/Code_EnvEnf_Services_Prod: environmental enforcement, dumping
-
-Both expose PARCEL_ID, REPORTED_DATE, REQUEST_TYPE, REQUEST_STATUS etc.
+Layers: PublicWorks/Code_Grounds_Services and PublicWorks/Code_EnvEnf_Services_Prod.
 """
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timedelta, timezone
 
-from db.db import connect
+from db.pg import connect
 from ingest.arcgis import iso_millis, iter_features
 
 LAYERS = {
@@ -25,25 +22,64 @@ OUT_FIELDS = ",".join([
     "CATEGORY", "GROUP_NAME",
 ])
 
+BATCH = 500
+
 
 def since_date_literal(days: int) -> str:
     d = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
     return f"DATE '{d}'"
 
 
+def normalize_parcel(pid: str | None) -> str | None:
+    if not pid:
+        return None
+    s = re.sub(r"\s+", "", pid.strip().upper())
+    if len(s) < 6:
+        return None
+    block, mapp, rest = s[:3], s[3:6], s[6:]
+    suffix = ""
+    if rest and rest[-1].isalpha():
+        suffix = rest[-1]
+        rest = rest[:-1]
+    if not rest or not rest.isdigit():
+        return None
+    return f"{block}{mapp}{int(rest)}{suffix}"
+
+
 def ingest_layer(name: str, url: str, days_back: int, max_features: int | None) -> dict:
-    started_at = datetime.now(timezone.utc).isoformat()
+    started_at = datetime.now(timezone.utc)
     where = f"REPORTED_DATE >= {since_date_literal(days_back)}"
 
     conn = connect()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO ingestion_log (source, started_at, status) VALUES (?, ?, ?)",
+        "INSERT INTO ingestion_log (source, started_at, status) VALUES (%s, %s, %s) RETURNING id",
         (f"code_enforcement:{name}", started_at, "running"),
     )
-    log_id = cur.lastrowid
+    log_id = cur.fetchone()["id"]
 
-    inserted = updated = 0
+    insert_sql = """
+        INSERT INTO code_violations (
+            id, source_layer, case_number, parcel_id, parcel_norm,
+            violation_type, status, open_date, close_date, address,
+            zipcode, lat, lng, raw_json
+        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT (id) DO UPDATE SET
+            violation_type=EXCLUDED.violation_type,
+            status=EXCLUDED.status,
+            open_date=EXCLUDED.open_date,
+            close_date=EXCLUDED.close_date,
+            address=EXCLUDED.address,
+            zipcode=EXCLUDED.zipcode,
+            parcel_id=EXCLUDED.parcel_id,
+            parcel_norm=EXCLUDED.parcel_norm,
+            lat=EXCLUDED.lat,
+            lng=EXCLUDED.lng,
+            raw_json=EXCLUDED.raw_json
+    """
+
+    total = 0
+    batch: list[tuple] = []
     try:
         for feat in iter_features(
             url,
@@ -57,68 +93,50 @@ def ingest_layer(name: str, url: str, days_back: int, max_features: int | None) 
             inum = a.get("INCIDENT_NUMBER")
             if not inum:
                 continue
-            uid = f"{name}:{inum}"
+            parcel_id = (a.get("PARCEL_ID") or "").strip() or None
             row = (
-                uid,
+                f"{name}:{inum}",
                 name,
                 inum,
+                parcel_id,
+                normalize_parcel(parcel_id),
                 a.get("REQUEST_TYPE"),
                 a.get("REQUEST_STATUS"),
                 iso_millis(a.get("REPORTED_DATE")),
                 iso_millis(a.get("CLOSE_DATE")),
                 a.get("ADDRESS1"),
                 a.get("POSTAL_CODE"),
-                (a.get("PARCEL_ID") or "").strip() or None,
                 geom.get("y"),
                 geom.get("x"),
                 json.dumps({k: a.get(k) for k in ("CATEGORY", "GROUP_NAME")}),
             )
-            cur.execute(
-                """
-                INSERT INTO code_violations (
-                    id, source_layer, case_number, violation_type, status,
-                    open_date, close_date, address, zipcode, parcel_id, lat, lng, raw_json
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-                ON CONFLICT(id) DO UPDATE SET
-                    violation_type=excluded.violation_type,
-                    status=excluded.status,
-                    open_date=excluded.open_date,
-                    close_date=excluded.close_date,
-                    address=excluded.address,
-                    zipcode=excluded.zipcode,
-                    parcel_id=excluded.parcel_id,
-                    lat=excluded.lat,
-                    lng=excluded.lng,
-                    raw_json=excluded.raw_json
-                """,
-                row,
-            )
-            if cur.rowcount == 1:
-                inserted += 1
-            else:
-                updated += 1
+            batch.append(row)
+            if len(batch) >= BATCH:
+                cur.executemany(insert_sql, batch)
+                total += len(batch)
+                batch.clear()
+        if batch:
+            cur.executemany(insert_sql, batch)
+            total += len(batch)
 
         cur.execute(
-            "UPDATE ingestion_log SET finished_at=?, records_inserted=?, records_updated=?, status=? WHERE id=?",
-            (datetime.now(timezone.utc).isoformat(), inserted, updated, "ok", log_id),
+            "UPDATE ingestion_log SET finished_at=%s, records_inserted=%s, status=%s WHERE id=%s",
+            (datetime.now(timezone.utc), total, "ok", log_id),
         )
     except Exception as e:
         cur.execute(
-            "UPDATE ingestion_log SET finished_at=?, status=?, error_message=? WHERE id=?",
-            (datetime.now(timezone.utc).isoformat(), "error", str(e), log_id),
+            "UPDATE ingestion_log SET finished_at=%s, status=%s, error_message=%s WHERE id=%s",
+            (datetime.now(timezone.utc), "error", str(e)[:500], log_id),
         )
         raise
     finally:
         conn.close()
 
-    return {"layer": name, "inserted": inserted, "updated": updated}
+    return {"layer": name, "processed": total}
 
 
 def ingest(days_back: int = 365, max_features: int | None = None) -> list[dict]:
-    results = []
-    for name, url in LAYERS.items():
-        results.append(ingest_layer(name, url, days_back, max_features))
-    return results
+    return [ingest_layer(n, u, days_back, max_features) for n, u in LAYERS.items()]
 
 
 if __name__ == "__main__":

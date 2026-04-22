@@ -1,15 +1,14 @@
-"""Ingest Memphis 311 service requests.
+"""Ingest Memphis 311 service requests into Neon Postgres.
 
-Source: City of Memphis Enterprise GIS (EGIS), public FeatureServer layer
-`OPM/COM_311_REQUESTS_OPM`. Each record carries a PARCEL_ID field so no
-spatial join is required. We pull the last N days (default 365) and upsert
-by INCIDENT_NUMBER.
+Source: City of Memphis EGIS FeatureServer layer OPM/COM_311_REQUESTS_OPM.
+Each record carries PARCEL_ID so no spatial join. Upsert by INCIDENT_NUMBER.
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 
-from db.db import connect
+from db.pg import connect
 from ingest.arcgis import iso_millis, iter_features
 
 LAYER_URL = (
@@ -25,25 +24,76 @@ OUT_FIELDS = ",".join([
     "SR_CREATION_CHANNEL",
 ])
 
+BATCH = 500
+
 
 def since_date_literal(days: int) -> str:
     d = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
     return f"DATE '{d}'"
 
 
+def normalize_parcel(pid: str | None) -> str | None:
+    if not pid:
+        return None
+    s = re.sub(r"\s+", "", pid.strip().upper())
+    if len(s) < 6:
+        return None
+    block, mapp, rest = s[:3], s[3:6], s[6:]
+    suffix = ""
+    if rest and rest[-1].isalpha():
+        suffix = rest[-1]
+        rest = rest[:-1]
+    if not rest or not rest.isdigit():
+        return None
+    return f"{block}{mapp}{int(rest)}{suffix}"
+
+
 def ingest(days_back: int = 365, max_features: int | None = None) -> dict:
-    started_at = datetime.now(timezone.utc).isoformat()
+    started_at = datetime.now(timezone.utc)
     where = f"REPORTED_DATE >= {since_date_literal(days_back)}"
 
     conn = connect()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO ingestion_log (source, started_at, status) VALUES (?, ?, ?)",
+        "INSERT INTO ingestion_log (source, started_at, status) VALUES (%s, %s, %s) RETURNING id",
         ("memphis_311", started_at, "running"),
     )
-    log_id = cur.lastrowid
+    log_id = cur.fetchone()["id"]
 
-    inserted = updated = 0
+    insert_sql = """
+        INSERT INTO requests_311 (
+            incident_number, objectid, parcel_id, parcel_norm, category,
+            group_name, department, division, request_type, request_status,
+            request_priority, reported_date, closed_date, resolved_date,
+            days_old, address, zipcode, neighborhood, council_district,
+            creation_channel, lat, lng
+        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT (incident_number) DO UPDATE SET
+            objectid=EXCLUDED.objectid,
+            parcel_id=EXCLUDED.parcel_id,
+            parcel_norm=EXCLUDED.parcel_norm,
+            category=EXCLUDED.category,
+            group_name=EXCLUDED.group_name,
+            department=EXCLUDED.department,
+            division=EXCLUDED.division,
+            request_type=EXCLUDED.request_type,
+            request_status=EXCLUDED.request_status,
+            request_priority=EXCLUDED.request_priority,
+            reported_date=EXCLUDED.reported_date,
+            closed_date=EXCLUDED.closed_date,
+            resolved_date=EXCLUDED.resolved_date,
+            days_old=EXCLUDED.days_old,
+            address=EXCLUDED.address,
+            zipcode=EXCLUDED.zipcode,
+            neighborhood=EXCLUDED.neighborhood,
+            council_district=EXCLUDED.council_district,
+            creation_channel=EXCLUDED.creation_channel,
+            lat=EXCLUDED.lat,
+            lng=EXCLUDED.lng
+    """
+
+    total = 0
+    batch: list[tuple] = []
     try:
         for feat in iter_features(
             LAYER_URL,
@@ -54,13 +104,15 @@ def ingest(days_back: int = 365, max_features: int | None = None) -> dict:
         ):
             a = feat.get("attributes") or {}
             geom = feat.get("geometry") or {}
-            lat = geom.get("y")
-            lng = geom.get("x")
-
+            inum = a.get("INCIDENT_NUMBER")
+            if not inum:
+                continue
+            parcel_id = (a.get("PARCEL_ID") or "").strip() or None
             row = (
-                a.get("INCIDENT_NUMBER"),
+                inum,
                 a.get("OBJECTID"),
-                (a.get("PARCEL_ID") or "").strip() or None,
+                parcel_id,
+                normalize_parcel(parcel_id),
                 a.get("CATEGORY"),
                 a.get("GROUP_NAME"),
                 a.get("DEPARTMENT"),
@@ -77,64 +129,32 @@ def ingest(days_back: int = 365, max_features: int | None = None) -> dict:
                 a.get("neigh_desc"),
                 a.get("cd_desc"),
                 a.get("SR_CREATION_CHANNEL"),
-                lat,
-                lng,
+                geom.get("y"),
+                geom.get("x"),
             )
-            if not row[0]:
-                continue
-
-            cur.execute(
-                """
-                INSERT INTO requests_311 (
-                    incident_number, objectid, parcel_id, category, group_name,
-                    department, division, request_type, request_status,
-                    request_priority, reported_date, closed_date, resolved_date,
-                    days_old, address, zipcode, neighborhood, council_district,
-                    creation_channel, lat, lng
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                ON CONFLICT(incident_number) DO UPDATE SET
-                    objectid=excluded.objectid,
-                    parcel_id=excluded.parcel_id,
-                    category=excluded.category,
-                    group_name=excluded.group_name,
-                    department=excluded.department,
-                    division=excluded.division,
-                    request_type=excluded.request_type,
-                    request_status=excluded.request_status,
-                    request_priority=excluded.request_priority,
-                    reported_date=excluded.reported_date,
-                    closed_date=excluded.closed_date,
-                    resolved_date=excluded.resolved_date,
-                    days_old=excluded.days_old,
-                    address=excluded.address,
-                    zipcode=excluded.zipcode,
-                    neighborhood=excluded.neighborhood,
-                    council_district=excluded.council_district,
-                    creation_channel=excluded.creation_channel,
-                    lat=excluded.lat,
-                    lng=excluded.lng
-                """,
-                row,
-            )
-            if cur.rowcount == 1:
-                inserted += 1
-            else:
-                updated += 1
+            batch.append(row)
+            if len(batch) >= BATCH:
+                cur.executemany(insert_sql, batch)
+                total += len(batch)
+                batch.clear()
+        if batch:
+            cur.executemany(insert_sql, batch)
+            total += len(batch)
 
         cur.execute(
-            "UPDATE ingestion_log SET finished_at=?, records_inserted=?, records_updated=?, status=? WHERE id=?",
-            (datetime.now(timezone.utc).isoformat(), inserted, updated, "ok", log_id),
+            "UPDATE ingestion_log SET finished_at=%s, records_inserted=%s, status=%s WHERE id=%s",
+            (datetime.now(timezone.utc), total, "ok", log_id),
         )
     except Exception as e:
         cur.execute(
-            "UPDATE ingestion_log SET finished_at=?, status=?, error_message=? WHERE id=?",
-            (datetime.now(timezone.utc).isoformat(), "error", str(e), log_id),
+            "UPDATE ingestion_log SET finished_at=%s, status=%s, error_message=%s WHERE id=%s",
+            (datetime.now(timezone.utc), "error", str(e)[:500], log_id),
         )
         raise
     finally:
         conn.close()
 
-    return {"inserted": inserted, "updated": updated, "days_back": days_back}
+    return {"processed": total, "days_back": days_back}
 
 
 if __name__ == "__main__":
@@ -143,5 +163,4 @@ if __name__ == "__main__":
     p.add_argument("--days", type=int, default=365)
     p.add_argument("--max", type=int, default=None)
     args = p.parse_args()
-    result = ingest(days_back=args.days, max_features=args.max)
-    print(result)
+    print(ingest(days_back=args.days, max_features=args.max))
