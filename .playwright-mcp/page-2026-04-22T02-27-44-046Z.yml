@@ -1,0 +1,75 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "BLIGHT COMPASS" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - link "Map" [ref=e4] [cursor=pointer]:
+      - /url: /map
+    - link "Top 50" [ref=e5] [cursor=pointer]:
+      - /url: /top
+    - link "Equity" [ref=e6] [cursor=pointer]:
+      - /url: /equity
+    - link "About" [ref=e7] [cursor=pointer]:
+      - /url: /about
+    - link "Subscribe" [ref=e8] [cursor=pointer]:
+      - /url: /subscribe
+  - main [ref=e9]:
+    - generic [ref=e10]: Methodology
+    - heading "About the Blight Compass" [level=1] [ref=e11]
+    - paragraph [ref=e12]: A single public interface for the datasets Memphis already publishes but rarely joins. Built for the Blight Strike Team, resident advocates, journalists, and anyone who has tried to report the same abandoned lot three times and wondered where the request went.
+    - heading "Data sources" [level=2] [ref=e13]
+    - table [ref=e14]:
+      - rowgroup [ref=e15]:
+        - row "Source Dataset Refresh" [ref=e16]:
+          - columnheader "Source" [ref=e17]
+          - columnheader "Dataset" [ref=e18]
+          - columnheader "Refresh" [ref=e19]
+      - rowgroup [ref=e20]:
+        - row "Memphis EGIS 311 Service Requests Daily" [ref=e21]:
+          - cell "Memphis EGIS" [ref=e22]
+          - cell "311 Service Requests" [ref=e23]:
+            - link "311 Service Requests" [ref=e24] [cursor=pointer]:
+              - /url: https://maps.memphistn.gov/mapping/rest/services/OPM/COM_311_REQUESTS_OPM/FeatureServer/0
+          - cell "Daily" [ref=e25]
+        - row "Memphis EGIS Code Grounds Services Daily" [ref=e26]:
+          - cell "Memphis EGIS" [ref=e27]
+          - cell "Code Grounds Services" [ref=e28]:
+            - link "Code Grounds Services" [ref=e29] [cursor=pointer]:
+              - /url: https://maps.memphistn.gov/mapping/rest/services/PublicWorks/Code_Grounds_Services/FeatureServer/0
+          - cell "Daily" [ref=e30]
+        - row "Memphis EGIS Environmental Enforcement Daily" [ref=e31]:
+          - cell "Memphis EGIS" [ref=e32]
+          - cell "Environmental Enforcement" [ref=e33]:
+            - link "Environmental Enforcement" [ref=e34] [cursor=pointer]:
+              - /url: https://maps.memphistn.gov/mapping/rest/services/PublicWorks/Code_EnvEnf_Services_Prod/FeatureServer/0
+          - cell "Daily" [ref=e35]
+        - row "Shelby County Land Bank inventory Daily" [ref=e36]:
+          - cell "Shelby County" [ref=e37]
+          - cell "Land Bank inventory" [ref=e38]:
+            - link "Land Bank inventory" [ref=e39] [cursor=pointer]:
+              - /url: https://public-sctn.epropertyplus.com/landmgmtpub/
+          - cell "Daily" [ref=e40]
+        - row "FEMA National Flood Hazard Layer Quarterly" [ref=e41]:
+          - cell "FEMA" [ref=e42]
+          - cell "National Flood Hazard Layer" [ref=e43]:
+            - link "National Flood Hazard Layer" [ref=e44] [cursor=pointer]:
+              - /url: https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer
+          - cell "Quarterly" [ref=e45]
+    - heading "Scoring formula" [level=2] [ref=e46]
+    - generic [ref=e47]: score = (chronic_complaints × 3) chronic = 3+ 311 requests in last 12 months + (code_violations × 2) count of Code Enforcement cases + (1 if flood_zone is X) FEMA Zone X or SFHA=False + (1 if asking_price < $2000) + (1 if width ≥ 30 AND length ≥ 50)
+    - paragraph [ref=e48]: Higher scores = more neighborhood pain concentrated on a single parcel, with attributes that make intervention practical. This ranks parcels, it does not judge owners. Scores are recomputed each ingestion run.
+    - heading "What this tool does not do" [level=2] [ref=e49]
+    - list [ref=e50]:
+      - listitem [ref=e51]: Does not accept applications or transfer ownership.
+      - listitem [ref=e52]: Does not publish owner-level editorial claims. Owner fields are hidden; apply via the Land Bank portal for official records.
+      - listitem [ref=e53]: Does not include eviction, tenant, or non-public court data.
+      - listitem [ref=e54]: Does not constitute legal, financial, or real-estate advice.
+    - heading "Open source" [level=2] [ref=e55]
+    - paragraph [ref=e56]:
+      - text: Code is public on
+      - link "GitHub" [ref=e57] [cursor=pointer]:
+        - /url: https://github.com/Rais-th/memphis-blight-compass
+      - text: under the MIT license. Issues, pull requests, and dataset suggestions welcome.
+    - heading "Contact" [level=2] [ref=e58]
+    - paragraph [ref=e59]:
+      - link "rthelemuka@gmail.com" [ref=e60] [cursor=pointer]:
+        - /url: mailto:rthelemuka@gmail.com

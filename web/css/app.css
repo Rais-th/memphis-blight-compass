@@ -165,7 +165,7 @@ table.data th {
   background: var(--panel);
 }
 table.data tr:hover td { background: var(--panel-2); }
-table.data td.num { text-align: right; }
+table.data td.num, table.data th.num { text-align: right; }
 .score-pill {
   display: inline-block;
   padding: 2px 8px;

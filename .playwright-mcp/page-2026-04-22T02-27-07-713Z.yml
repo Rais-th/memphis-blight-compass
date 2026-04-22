@@ -1,0 +1,179 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "BLIGHT COMPASS" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - link "Map" [ref=e4] [cursor=pointer]:
+      - /url: /map
+    - link "Top 50" [ref=e5] [cursor=pointer]:
+      - /url: /top
+    - link "Equity" [ref=e6] [cursor=pointer]:
+      - /url: /equity
+    - link "About" [ref=e7] [cursor=pointer]:
+      - /url: /about
+    - link "Subscribe" [ref=e8] [cursor=pointer]:
+      - /url: /subscribe
+  - main [ref=e9]:
+    - generic [ref=e10]: Parcel 0941000000011Z
+    - heading "4943 TCHULAHOMA" [level=1] [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: Blight score
+        - generic [ref=e16]: "42.0"
+      - generic [ref=e17]:
+        - generic [ref=e18]: Asking price
+        - generic [ref=e19]: $20,700
+      - generic [ref=e20]:
+        - generic [ref=e21]: Size
+        - generic [ref=e22]: 0.752 ac
+      - generic [ref=e23]:
+        - generic [ref=e24]: Flood zone
+        - generic [ref=e25]: —
+      - generic [ref=e26]:
+        - generic [ref=e27]: Complaints (12mo)
+        - generic [ref=e28]: "9"
+      - generic [ref=e29]:
+        - generic [ref=e30]: Code violations
+        - generic [ref=e31]: "7"
+    - generic [ref=e32]:
+      - button "Marker" [ref=e33] [cursor=pointer]
+      - generic:
+        - generic [ref=e34]:
+          - button "Zoom in" [ref=e35] [cursor=pointer]: +
+          - button "Zoom out" [ref=e36] [cursor=pointer]: −
+        - generic [ref=e37]:
+          - link "Leaflet" [ref=e38] [cursor=pointer]:
+            - /url: https://leafletjs.com
+            - img [ref=e39]
+            - text: Leaflet
+          - text: "| © OSM © CARTO"
+    - heading "Complaint history" [level=2] [ref=e43]
+    - table [ref=e44]:
+      - rowgroup [ref=e45]:
+        - row "Date Category Group Dept Status Closed" [ref=e46]:
+          - columnheader "Date" [ref=e47]
+          - columnheader "Category" [ref=e48]
+          - columnheader "Group" [ref=e49]
+          - columnheader "Dept" [ref=e50]
+          - columnheader "Status" [ref=e51]
+          - columnheader "Closed" [ref=e52]
+      - rowgroup [ref=e53]:
+        - row "4/10/2026 Maintenance Memphis Open —" [ref=e54]:
+          - cell "4/10/2026" [ref=e55]
+          - cell "Maintenance" [ref=e56]
+          - cell "Memphis" [ref=e57]
+          - cell [ref=e58]
+          - cell "Open" [ref=e59]
+          - cell "—" [ref=e60]
+        - row "3/23/2026 Memphis Closed 3/26/2026" [ref=e61]:
+          - cell "3/23/2026" [ref=e62]
+          - cell [ref=e63]
+          - cell "Memphis" [ref=e64]
+          - cell [ref=e65]
+          - cell "Closed" [ref=e66]
+          - cell "3/26/2026" [ref=e67]
+        - row "1/2/2026 Memphis Closed 3/12/2026" [ref=e68]:
+          - cell "1/2/2026" [ref=e69]
+          - cell [ref=e70]
+          - cell "Memphis" [ref=e71]
+          - cell [ref=e72]
+          - cell "Closed" [ref=e73]
+          - cell "3/12/2026" [ref=e74]
+        - row "12/16/2025 Memphis Closed 12/19/2025" [ref=e75]:
+          - cell "12/16/2025" [ref=e76]
+          - cell [ref=e77]
+          - cell "Memphis" [ref=e78]
+          - cell [ref=e79]
+          - cell "Closed" [ref=e80]
+          - cell "12/19/2025" [ref=e81]
+        - row "10/14/2025 Memphis Closed 11/3/2025" [ref=e82]:
+          - cell "10/14/2025" [ref=e83]
+          - cell [ref=e84]
+          - cell "Memphis" [ref=e85]
+          - cell [ref=e86]
+          - cell "Closed" [ref=e87]
+          - cell "11/3/2025" [ref=e88]
+        - row "9/3/2025 Memphis Closed 9/23/2025" [ref=e89]:
+          - cell "9/3/2025" [ref=e90]
+          - cell [ref=e91]
+          - cell "Memphis" [ref=e92]
+          - cell [ref=e93]
+          - cell "Closed" [ref=e94]
+          - cell "9/23/2025" [ref=e95]
+        - row "7/17/2025 MEMPHIS STREET MAINTENANCE Closed 7/18/2025" [ref=e96]:
+          - cell "7/17/2025" [ref=e97]
+          - cell [ref=e98]
+          - cell "MEMPHIS" [ref=e99]
+          - cell "STREET MAINTENANCE" [ref=e100]
+          - cell "Closed" [ref=e101]
+          - cell "7/18/2025" [ref=e102]
+        - row "5/14/2025 Memphis Closed 6/12/2025" [ref=e103]:
+          - cell "5/14/2025" [ref=e104]
+          - cell [ref=e105]
+          - cell "Memphis" [ref=e106]
+          - cell [ref=e107]
+          - cell "Closed" [ref=e108]
+          - cell "6/12/2025" [ref=e109]
+        - row "5/14/2025 MEMPHIS ENVIRONMENTAL ENFORCEMENT Closed 8/21/2025" [ref=e110]:
+          - cell "5/14/2025" [ref=e111]
+          - cell [ref=e112]
+          - cell "MEMPHIS" [ref=e113]
+          - cell "ENVIRONMENTAL ENFORCEMENT" [ref=e114]
+          - cell "Closed" [ref=e115]
+          - cell "8/21/2025" [ref=e116]
+    - heading "Code enforcement" [level=2] [ref=e117]
+    - table [ref=e118]:
+      - rowgroup [ref=e119]:
+        - row "Opened Source Violation Status Closed" [ref=e120]:
+          - columnheader "Opened" [ref=e121]
+          - columnheader "Source" [ref=e122]
+          - columnheader "Violation" [ref=e123]
+          - columnheader "Status" [ref=e124]
+          - columnheader "Closed" [ref=e125]
+      - rowgroup [ref=e126]:
+        - row "3/23/2026 code_envenf EE-Illegal Dumping Closed 3/26/2026" [ref=e127]:
+          - cell "3/23/2026" [ref=e128]
+          - cell "code_envenf" [ref=e129]
+          - cell "EE-Illegal Dumping" [ref=e130]
+          - cell "Closed" [ref=e131]
+          - cell "3/26/2026" [ref=e132]
+        - row "1/2/2026 code_envenf EE-Illegal Dumping Closed 3/12/2026" [ref=e133]:
+          - cell "1/2/2026" [ref=e134]
+          - cell "code_envenf" [ref=e135]
+          - cell "EE-Illegal Dumping" [ref=e136]
+          - cell "Closed" [ref=e137]
+          - cell "3/12/2026" [ref=e138]
+        - row "12/16/2025 code_envenf EE-Illegal Dumping Closed 12/19/2025" [ref=e139]:
+          - cell "12/16/2025" [ref=e140]
+          - cell "code_envenf" [ref=e141]
+          - cell "EE-Illegal Dumping" [ref=e142]
+          - cell "Closed" [ref=e143]
+          - cell "12/19/2025" [ref=e144]
+        - row "10/14/2025 code_envenf EE-Illegal Dumping Closed 11/3/2025" [ref=e145]:
+          - cell "10/14/2025" [ref=e146]
+          - cell "code_envenf" [ref=e147]
+          - cell "EE-Illegal Dumping" [ref=e148]
+          - cell "Closed" [ref=e149]
+          - cell "11/3/2025" [ref=e150]
+        - row "9/3/2025 code_envenf EE-Illegal Dumping Closed 9/23/2025" [ref=e151]:
+          - cell "9/3/2025" [ref=e152]
+          - cell "code_envenf" [ref=e153]
+          - cell "EE-Illegal Dumping" [ref=e154]
+          - cell "Closed" [ref=e155]
+          - cell "9/23/2025" [ref=e156]
+        - row "5/14/2025 code_envenf EE-Illegal Dumping Closed 6/12/2025" [ref=e157]:
+          - cell "5/14/2025" [ref=e158]
+          - cell "code_envenf" [ref=e159]
+          - cell "EE-Illegal Dumping" [ref=e160]
+          - cell "Closed" [ref=e161]
+          - cell "6/12/2025" [ref=e162]
+        - row "5/14/2025 code_envenf EE-Illegal Dumping Closed 8/21/2025" [ref=e163]:
+          - cell "5/14/2025" [ref=e164]
+          - cell "code_envenf" [ref=e165]
+          - cell "EE-Illegal Dumping" [ref=e166]
+          - cell "Closed" [ref=e167]
+          - cell "8/21/2025" [ref=e168]
+    - heading "How to apply" [level=2] [ref=e169]
+    - paragraph [ref=e170]: If this parcel is available through the Shelby County Land Bank, you can submit an application on the official Land Bank portal. This tool does not take applications; it only cross-references public records.
+    - paragraph [ref=e171]:
+      - link "Go to Land Bank" [ref=e172] [cursor=pointer]:
+        - /url: https://public-sctn.epropertyplus.com/landmgmtpub/

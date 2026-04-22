@@ -1,0 +1,31 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "BLIGHT COMPASS" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - link "Map" [ref=e4] [cursor=pointer]:
+      - /url: /map
+    - link "Top 50" [ref=e5] [cursor=pointer]:
+      - /url: /top
+    - link "Equity" [ref=e6] [cursor=pointer]:
+      - /url: /equity
+    - link "About" [ref=e7] [cursor=pointer]:
+      - /url: /about
+    - link "Subscribe" [ref=e8] [cursor=pointer]:
+      - /url: /subscribe
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - generic:
+        - generic [ref=e11]:
+          - button "Zoom in" [ref=e12] [cursor=pointer]: +
+          - button "Zoom out" [ref=e13] [cursor=pointer]: −
+        - generic [ref=e14]:
+          - link "Leaflet" [ref=e15] [cursor=pointer]:
+            - /url: https://leafletjs.com
+            - img [ref=e16]
+            - text: Leaflet
+          - text: "| © OpenStreetMap © CARTO"
+    - generic [ref=e20]:
+      - generic [ref=e21]: Score 10+
+      - generic [ref=e23]: Score 6-9
+      - generic [ref=e25]: Score 3-5
+      - generic [ref=e27]: Score 1-2

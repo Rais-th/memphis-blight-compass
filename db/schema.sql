@@ -91,6 +91,8 @@ CREATE TABLE IF NOT EXISTS scores (
     flood_safe INTEGER DEFAULT 0,
     affordable INTEGER DEFAULT 0,
     buildable INTEGER DEFAULT 0,
+    lat REAL,
+    lng REAL,
     computed_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_scores_score ON scores(score DESC);

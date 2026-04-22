@@ -1,0 +1,32 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "BLIGHT COMPASS" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - link "Map" [ref=e4] [cursor=pointer]:
+      - /url: /map
+    - link "Top 50" [ref=e5] [cursor=pointer]:
+      - /url: /top
+    - link "Equity" [ref=e6] [cursor=pointer]:
+      - /url: /equity
+    - link "About" [ref=e7] [cursor=pointer]:
+      - /url: /about
+    - link "Subscribe" [ref=e8] [cursor=pointer]:
+      - /url: /subscribe
+  - main [ref=e9]:
+    - generic [ref=e10]: 311 service distribution
+    - heading "Response-time equity by zip" [level=1] [ref=e11]
+    - paragraph [ref=e12]: Average days from 311 request to closure, by zip code. Longer bars mean longer waits. Zips with fewer than 10 requests in the window are excluded.
+    - paragraph [ref=e14]: Loading…
+    - heading "What this can and cannot show" [level=2] [ref=e15]
+    - paragraph [ref=e16]: "This is the start of an open question the Bloomberg Harvard report left unanswered: is Memphis 311 service distribution equitable? These averages include all request types, weighted naturally by volume. \"Still open\" means the city has not yet closed the ticket. Differences across zips are suggestive, not causal: request mix, distance from depots, and contractor zones all matter. Download the raw data (link on About) to reproduce."
+    - heading "Raw table" [level=2] [ref=e17]
+    - table [ref=e18]:
+      - rowgroup [ref=e19]:
+        - row "Zip Requests Avg days to close Still open" [ref=e20]:
+          - columnheader "Zip" [ref=e21]
+          - columnheader "Requests" [ref=e22]
+          - columnheader "Avg days to close" [ref=e23]
+          - columnheader "Still open" [ref=e24]
+      - rowgroup [ref=e25]:
+        - row "Loading…" [ref=e26]:
+          - cell "Loading…" [ref=e27]

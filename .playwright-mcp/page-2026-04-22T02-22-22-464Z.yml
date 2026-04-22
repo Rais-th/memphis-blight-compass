@@ -1,0 +1,37 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "BLIGHT COMPASS" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - link "Map" [ref=e4] [cursor=pointer]:
+      - /url: /map
+    - link "Top 50" [ref=e5] [cursor=pointer]:
+      - /url: /top
+    - link "Equity" [ref=e6] [cursor=pointer]:
+      - /url: /equity
+    - link "About" [ref=e7] [cursor=pointer]:
+      - /url: /about
+    - link "Subscribe" [ref=e8] [cursor=pointer]:
+      - /url: /subscribe
+  - main [ref=e9]:
+    - generic [ref=e10]: Acquisition-ready
+    - heading "Top 50 parcels" [level=1] [ref=e11]
+    - paragraph [ref=e12]: Ranked by blight score. Only City-owned Land Bank parcels that are for sale and not landlocked.
+    - paragraph [ref=e13]:
+      - link "Download CSV" [ref=e14] [cursor=pointer]:
+        - /url: /api/csv/weekly?limit=100
+      - link "See on map" [ref=e15] [cursor=pointer]:
+        - /url: /map
+    - table [ref=e16]:
+      - rowgroup [ref=e17]:
+        - row "Score Address Zip Price Acres Complaints Violations Flood" [ref=e18]:
+          - columnheader "Score" [ref=e19]
+          - columnheader "Address" [ref=e20]
+          - columnheader "Zip" [ref=e21]
+          - columnheader "Price" [ref=e22]
+          - columnheader "Acres" [ref=e23]
+          - columnheader "Complaints" [ref=e24]
+          - columnheader "Violations" [ref=e25]
+          - columnheader "Flood" [ref=e26]
+      - rowgroup [ref=e27]:
+        - row "Loading…" [ref=e28]:
+          - cell "Loading…" [ref=e29]

@@ -22,23 +22,28 @@ from score.normalize import backfill as backfill_norm
 SQL_SCORE = """
 INSERT OR REPLACE INTO scores
   (parcel_id, parcel_norm, score, chronic_complaints, code_violations,
-   flood_safe, affordable, buildable, computed_at)
+   flood_safe, affordable, buildable, lat, lng, computed_at)
 WITH
   complaints AS (
-    SELECT parcel_norm, COUNT(*) AS n
+    SELECT parcel_norm, COUNT(*) AS n,
+           AVG(CASE WHEN lat BETWEEN 34.9 AND 35.4 THEN lat END) AS avg_lat,
+           AVG(CASE WHEN lng BETWEEN -90.3 AND -89.5 THEN lng END) AS avg_lng
     FROM requests_311
     WHERE parcel_norm IS NOT NULL
       AND reported_date >= datetime('now', '-365 days')
     GROUP BY parcel_norm
   ),
   violations AS (
-    SELECT parcel_norm, COUNT(*) AS n
+    SELECT parcel_norm, COUNT(*) AS n,
+           AVG(CASE WHEN lat BETWEEN 34.9 AND 35.4 THEN lat END) AS avg_lat,
+           AVG(CASE WHEN lng BETWEEN -90.3 AND -89.5 THEN lng END) AS avg_lng
     FROM code_violations
     WHERE parcel_norm IS NOT NULL
     GROUP BY parcel_norm
   ),
   lb AS (
-    SELECT parcel_norm, parcel_id, asking_price, parcel_length, parcel_width
+    SELECT parcel_norm, parcel_id, asking_price, parcel_length, parcel_width,
+           lat, lng
     FROM landbank_inventory WHERE parcel_norm IS NOT NULL
   ),
   flood AS (
@@ -64,6 +69,8 @@ SELECT
   CASE WHEN f.flood_zone IN ('X', 'X500') OR f.sfha_tf = 'F' THEN 1 ELSE 0 END AS flood_safe,
   CASE WHEN l.asking_price IS NOT NULL AND l.asking_price < 2000 THEN 1 ELSE 0 END AS affordable,
   CASE WHEN COALESCE(l.parcel_width, 0) >= 30 AND COALESCE(l.parcel_length, 0) >= 50 THEN 1 ELSE 0 END AS buildable,
+  COALESCE(l.lat, v.avg_lat, c.avg_lat) AS lat,
+  COALESCE(l.lng, v.avg_lng, c.avg_lng) AS lng,
   ? AS computed_at
 FROM parcels p
 LEFT JOIN complaints c USING (parcel_norm)

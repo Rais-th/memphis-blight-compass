@@ -93,7 +93,9 @@ def parcels_top(limit: int = 50, min_score: float = 1.0, acquirable: bool = True
               s.parcel_id, s.score, s.chronic_complaints, s.code_violations,
               s.flood_safe, s.affordable, s.buildable,
               l.address, l.zipcode, l.asking_price, l.acres, l.parcel_length,
-              l.parcel_width, l.improvement_type, l.lat, l.lng,
+              l.parcel_width, l.improvement_type,
+              COALESCE(l.lat, s.lat) AS lat,
+              COALESCE(l.lng, s.lng) AS lng,
               f.flood_zone
             FROM scores s
             LEFT JOIN landbank_inventory l ON l.parcel_norm = s.parcel_norm
@@ -184,7 +186,7 @@ def equity():
               AVG(julianday(closed_date) - julianday(reported_date)) AS avg_days_to_close,
               SUM(CASE WHEN closed_date IS NULL THEN 1 ELSE 0 END) AS still_open
             FROM requests_311
-            WHERE zipcode IS NOT NULL
+            WHERE zipcode IS NOT NULL AND TRIM(zipcode) != ''
             GROUP BY zipcode
             HAVING total_requests >= 10
             ORDER BY avg_days_to_close DESC

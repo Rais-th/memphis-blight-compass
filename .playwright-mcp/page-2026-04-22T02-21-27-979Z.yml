@@ -1,0 +1,80 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "BLIGHT COMPASS" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - link "Map" [ref=e4] [cursor=pointer]:
+      - /url: /map
+    - link "Top 50" [ref=e5] [cursor=pointer]:
+      - /url: /top
+    - link "Equity" [ref=e6] [cursor=pointer]:
+      - /url: /equity
+    - link "About" [ref=e7] [cursor=pointer]:
+      - /url: /about
+    - link "Subscribe" [ref=e8] [cursor=pointer]:
+      - /url: /subscribe
+  - main [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]: Memphis · Civic Tech
+      - heading "Memphis Blight Compass" [level=1] [ref=e12]
+      - paragraph [ref=e13]: The 311 integration has not yet been solved. Complaints, code enforcement cases, and Land Bank inventory live in separate systems. This tool joins them, scores parcels by chronic complaint density, and surfaces acquisition-ready lots where the City already owns the inventory.
+      - paragraph [ref=e14]:
+        - link "Open the map" [ref=e15] [cursor=pointer]:
+          - /url: /map
+        - link "See top 50 parcels" [ref=e16] [cursor=pointer]:
+          - /url: /top
+    - generic [ref=e17]:
+      - heading "Live snapshot" [level=2] [ref=e18]
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: Parcels scored
+          - generic [ref=e22]: —
+        - generic [ref=e23]:
+          - generic [ref=e24]: For-sale lots
+          - generic [ref=e25]: —
+        - generic [ref=e26]:
+          - generic [ref=e27]: 311 requests (1 year)
+          - generic [ref=e28]: —
+        - generic [ref=e29]:
+          - generic [ref=e30]: Code enforcement cases
+          - generic [ref=e31]: —
+    - generic [ref=e32]:
+      - heading "Why this exists" [level=2] [ref=e33]
+      - paragraph [ref=e34]: "The Bloomberg Harvard City Leadership Initiative publicly documented in October 2023 that Memphis's 311 integration \"has not yet been solved\" — complaints don't route effectively between Code Enforcement, Public Works, and Solid Waste. Director Melanie Neal of Community Enhancement said in October 2025: \"We need a faster way to intervene.\""
+      - paragraph [ref=e35]: Meanwhile, Shelby County Land Bank inventory isn't cross-referenced with 311 blight data. Parcels sell for $400 to $2,000 in zones where neighbors have complained for years. Nothing connects the data — until now.
+    - generic [ref=e36]:
+      - heading "How to use this" [level=2] [ref=e37]
+      - heading "Blight strike team" [level=3] [ref=e38]
+      - paragraph [ref=e39]:
+        - text: Open
+        - link "the map" [ref=e40] [cursor=pointer]:
+          - /url: /map
+        - text: and sort by score. Each red dot is a parcel with 3+ complaints in 12 months or multiple active code cases. The
+        - link "equity dashboard" [ref=e41] [cursor=pointer]:
+          - /url: /equity
+        - text: shows which zips wait longest for resolution.
+      - heading "Residents and non-profits" [level=3] [ref=e42]
+      - paragraph [ref=e43]:
+        - text: The
+        - link "top 50" [ref=e44] [cursor=pointer]:
+          - /url: /top
+        - text: list surfaces acquisition-ready lots where the City-owned Land Bank has them for sale under $2,000. Click any parcel for full complaint + violation history.
+      - heading "Journalists and researchers" [level=3] [ref=e45]
+      - paragraph [ref=e46]:
+        - text: All data is public record. CSV exports and an open API power this page. See
+        - link "methodology" [ref=e47] [cursor=pointer]:
+          - /url: /about
+        - text: for sources and caveats.
+  - contentinfo [ref=e48]:
+    - text: Data from
+    - link "Memphis Open Data Hub" [ref=e49] [cursor=pointer]:
+      - /url: https://data.memphistn.gov
+    - text: ","
+    - link "Shelby County Land Bank" [ref=e50] [cursor=pointer]:
+      - /url: https://public-sctn.epropertyplus.com/landmgmtpub/
+    - text: ","
+    - link "FEMA NFHL" [ref=e51] [cursor=pointer]:
+      - /url: https://hazards.fema.gov/
+    - text: . Built by
+    - link "Rais Thelemuka" [ref=e52] [cursor=pointer]:
+      - /url: https://github.com/Rais-th
+    - text: . Not legal or real-estate advice. MIT license.
