@@ -1,18 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "builds": [
-    { "src": "api/index.py", "use": "@vercel/python" }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/index.py" },
-    { "src": "/static/(.*)", "dest": "/$1" },
-    { "src": "/parcel/(.*)", "dest": "/parcel.html" },
-    { "src": "/map", "dest": "/map.html" },
-    { "src": "/top", "dest": "/top.html" },
-    { "src": "/equity", "dest": "/equity.html" },
-    { "src": "/about", "dest": "/about.html" },
-    { "src": "/subscribe", "dest": "/subscribe.html" },
-    { "src": "/", "dest": "/index.html" },
-    { "handle": "filesystem" }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.py" },
+    { "source": "/static/(.*)", "destination": "/$1" },
+    { "source": "/parcel/:id", "destination": "/parcel.html" },
+    { "source": "/map", "destination": "/map.html" },
+    { "source": "/top", "destination": "/top.html" },
+    { "source": "/equity", "destination": "/equity.html" },
+    { "source": "/about", "destination": "/about.html" },
+    { "source": "/subscribe", "destination": "/subscribe.html" }
   ]
 }

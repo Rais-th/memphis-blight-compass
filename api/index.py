@@ -17,9 +17,7 @@ from pydantic import BaseModel, EmailStr
 from db.pg import connect
 
 ROOT = Path(__file__).resolve().parent.parent
-WEB = ROOT / "web"
-PUBLIC = ROOT / "public"
-STATIC_DIR = PUBLIC if PUBLIC.exists() else WEB
+STATIC_DIR = ROOT
 
 app = FastAPI(title="Memphis Blight Compass", version="1.0.0")
 
