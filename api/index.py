@@ -4,9 +4,14 @@ from __future__ import annotations
 import csv
 import io
 import secrets
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +21,6 @@ from pydantic import BaseModel, EmailStr
 
 from db.pg import connect
 
-ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT
 
 app = FastAPI(title="Memphis Blight Compass", version="1.0.0")
