@@ -33,6 +33,23 @@ app.add_middleware(
 )
 
 
+@app.get("/api/_debug")
+def debug():
+    """Expose env keys (no secrets) + DB ping so we can diagnose 500s."""
+    import os, traceback
+    env_keys = sorted(
+        k for k in os.environ
+        if k.startswith(("DATABASE", "POSTGRES", "PG", "VERCEL"))
+    )
+    try:
+        with connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT 1 AS ok, current_database() AS db, version() AS v")
+            row = dict(cur.fetchone())
+            return {"env_keys": env_keys, "db_ping": row}
+    except Exception as e:
+        return {"env_keys": env_keys, "error": str(e)[:500], "trace": traceback.format_exc()[-1500:]}
+
+
 @app.get("/api/stats")
 def stats():
     with connect() as conn, conn.cursor() as cur:
