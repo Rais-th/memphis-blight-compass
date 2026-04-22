@@ -23,11 +23,16 @@
       acquirable lots.
     </p>
 
-    <div id="home-map" class="home-map">
-      <div class="home-map-loading">Loading hotspots…</div>
-    </div>
+    <a class="home-map-link" href="/map" aria-label="Open the full interactive map">
+      <div id="home-map" class="home-map">
+        <div class="home-map-loading">Loading hotspots…</div>
+        <div class="home-map-overlay">
+          <span>Open full map →</span>
+        </div>
+      </div>
+    </a>
     <div class="home-map-caption small muted">
-      Sample of the top-scoring parcels. <a href="/map">Open the full map →</a>
+      Sample of the top-scoring parcels. Click the preview to explore.
     </div>
 
     <p style="margin-top:28px">
@@ -99,13 +104,20 @@ window.addEventListener('load', async () => {
     const resp = await fetch('/api/parcels/top?limit=200&min_score=3&acquirable=false');
     if (!resp.ok) throw new Error('fetch');
     const geojson = await resp.json();
-    el.innerHTML = '';
+    const loading = el.querySelector('.home-map-loading');
+    if (loading) loading.remove();
     const map = L.map(el, {
-      zoomControl: true,
+      zoomControl: false,
+      dragging: false,
+      touchZoom: false,
       scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      tap: false,
       preferCanvas: true,
-      attributionControl: true,
-    }).setView([35.118, -90.00], 10);
+      attributionControl: false,
+    }).setView([35.118, -89.97], 10);
     L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap &copy; CARTO',
       subdomains: 'abcd',
@@ -119,16 +131,8 @@ window.addEventListener('load', async () => {
         weight: 1,
         fillColor: colorFor(f.properties.score || 1),
         fillOpacity: 0.75,
-        className: 'parcel-dot',
+        interactive: false,
       }),
-      onEachFeature: (f, layer) => {
-        const p = f.properties;
-        const label = `${p.address || 'Parcel ' + p.parcel_id}<br><span style="opacity:.7">Score ${Number(p.score).toFixed(1)} · click to view</span>`;
-        layer.bindTooltip(label, { direction: 'top', offset: [0, -4] });
-        layer.on('click', () => {
-          location.href = '/parcel/' + encodeURIComponent(p.parcel_id);
-        });
-      },
     }).addTo(map);
   } catch (e) {
     el.innerHTML = '<div class="home-map-loading">Map unavailable. Use /map for full view.</div>';

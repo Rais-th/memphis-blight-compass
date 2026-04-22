@@ -195,6 +195,13 @@ table.data td.num, table.data th.num { text-align: right; }
 #map { height: 100%; width: 100%; }
 .leaflet-container { background: #0a0d12 !important; }
 
+.home-map-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.home-map-link:hover { text-decoration: none; }
 .home-map {
   height: 380px;
   width: 100%;
@@ -204,7 +211,9 @@ table.data td.num, table.data th.num { text-align: right; }
   overflow: hidden;
   background: #0a0d12;
   position: relative;
+  transition: border-color 0.15s ease;
 }
+.home-map-link:hover .home-map { border-color: var(--accent); }
 .home-map-loading {
   position: absolute;
   inset: 0;
@@ -214,7 +223,39 @@ table.data td.num, table.data th.num { text-align: right; }
   color: var(--ink-dim);
   font-family: var(--mono);
   font-size: 0.85rem;
+  z-index: 2;
 }
+.home-map-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 17, 21, 0);
+  opacity: 0;
+  transition: opacity 0.18s ease, background 0.18s ease;
+  pointer-events: none;
+  z-index: 400;
+}
+.home-map-overlay span {
+  background: var(--accent);
+  color: #171a21;
+  padding: 12px 22px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  transform: translateY(6px);
+  transition: transform 0.18s ease;
+}
+.home-map-link:hover .home-map-overlay {
+  opacity: 1;
+  background: rgba(15, 17, 21, 0.45);
+}
+.home-map-link:hover .home-map-overlay span { transform: translateY(0); }
 .home-map-caption { margin: 8px 0 0; }
 .parcel-dot { cursor: pointer; }
 .leaflet-tooltip {
